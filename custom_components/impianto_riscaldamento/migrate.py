@@ -61,7 +61,8 @@ async def async_migrate_legacy(hass: HomeAssistant, entry: ConfigEntry) -> None:
         if "new_config_entry_id" in inspect.signature(dev_reg.async_update_device).parameters:
             dev_reg.async_update_device(dev.id, new_identifiers=identifiers, new_config_entry_id=new_id)
         else:  # Home Assistant meno recente: un dispositivo puo' avere piu' voci
-            dev_reg.async_update_device(dev.id, new_identifiers=identifiers, add_config_entry_id=new_id, remove_config_entry_id=old_id)
+            dev_reg.async_update_device(dev.id, new_identifiers=identifiers, add_config_entry_id=new_id)
+            dev_reg.async_update_device(dev.id, remove_config_entry_id=old_id)
 
     _LOGGER.info("Voce «%s» di %s importata", entry.title, old_domain)
     hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_MIGRATION_DONE: True})

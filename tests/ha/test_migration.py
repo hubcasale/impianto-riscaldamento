@@ -30,6 +30,12 @@ def _old_registry(hass: HomeAssistant, old: MockConfigEntry, entities: list[tupl
     return dev.id
 
 
+def _entries_of(dev) -> set[str]:
+    """Le voci del dispositivo (una sola nelle versioni recenti di Home Assistant, un elenco nelle precedenti)."""
+    one = getattr(dev, "config_entry_id", None)
+    return {one} if one else set(dev.config_entries)
+
+
 async def _import(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] == "menu"
@@ -68,7 +74,7 @@ async def test_import_stove_keeps_entity_ids_device_and_saved_data(hass: HomeAss
     assert [e.entity_id for e in er.async_entries_for_config_entry(reg, entry.entry_id) if e.entity_id.endswith("_stato_2")] == []
     # lo stesso dispositivo
     dev = dr.async_get(hass).async_get(dev_id)
-    assert dev is not None and (DOMAIN, entry.entry_id) in dev.identifiers and dev.config_entry_id == entry.entry_id
+    assert dev is not None and (DOMAIN, entry.entry_id) in dev.identifiers and _entries_of(dev) == {entry.entry_id}
     # il programma salvato e' arrivato al controller
     assert hass.data[DOMAIN][entry.entry_id].schedule.enabled is True
     assert hass.states.get("sensor.stufa_a_pellet_stato") is not None

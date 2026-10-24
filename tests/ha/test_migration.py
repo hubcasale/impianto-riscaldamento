@@ -115,3 +115,37 @@ async def test_import_twice_does_not_duplicate(hass: HomeAssistant) -> None:
     assert len(hass.config_entries.async_entries(DOMAIN)) == 1
 
 
+
+
+async def test_new_entry_adopts_entities_left_by_a_deleted_old_entry(hass: HomeAssistant) -> None:
+    """La voce vecchia e' stata eliminata a mano: restano entita' orfane e i dati salvati; la voce nuova li adotta."""
+    hass.states.async_set("climate.termostato", "heat", {"temperature": 20, "current_temperature": 19, "hvac_modes": ["heat", "off"]})
+    reg = er.async_get(hass)
+    old_id = "01OLDENTRYIDXXXXXXXXXXXXXX"
+    reg.async_get_or_create("sensor", "termostato_riscaldamento", f"{old_id}_modo", suggested_object_id="termostato_riscaldamento_modalita")
+    reg.async_get_or_create("switch", "termostato_riscaldamento", f"{old_id}_programmazione", suggested_object_id="termostato_riscaldamento_programmazione")
+    await Store(hass, 1, f"termostato_riscaldamento.{old_id}").async_save({"schedule": SCHEDULE})
+
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["menu_options"] == ["stufa", "termostato"]
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "termostato"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Termostato", "climate": "climate.termostato"})
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    ent = reg.async_get("sensor.termostato_riscaldamento_modalita")
+    assert ent is not None and ent.platform == DOMAIN and ent.config_entry_id == entry.entry_id
+    assert reg.async_get("sensor.termostato_riscaldamento_modalita_2") is None
+    assert reg.async_get("switch.termostato_riscaldamento_programmazione").unique_id == f"{entry.entry_id}_programmazione"
+    assert hass.data[DOMAIN][entry.entry_id].schedule.enabled is True
+
+
+async def test_other_kind_does_not_adopt_foreign_orphans(hass: HomeAssistant) -> None:
+    reg = er.async_get(hass)
+    reg.async_get_or_create("sensor", "termostato_riscaldamento", "01OLDXXXXXXXXXXXXXXXXXXXXX_modo", suggested_object_id="termostato_riscaldamento_modalita")
+    hass.states.async_set("sensor.presa_power", "0", {"unit_of_measurement": "W", "device_class": "power"})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "stufa"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Stufa", "power_sensor": "sensor.presa_power"})
+    assert "migrated_from" not in result["data"]

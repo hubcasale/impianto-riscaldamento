@@ -7,8 +7,8 @@ from typing import Any
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 
-from .const import CONF_KIND, DOMAIN, KIND_STUFA, KIND_TERMOSTATO
-from .migrate import import_payload, legacy_entries
+from .const import CONF_KIND, CONF_LEGACY_DOMAIN, CONF_MIGRATED_FROM, DOMAIN, KIND_STUFA, KIND_TERMOSTATO
+from .migrate import import_payload, legacy_entries, orphan_for_kind
 from .stufa import config_flow as stufa_flow
 from .stufa.const import CONF_NAME as STUFA_NAME, CONF_POWER
 from .termostato import config_flow as termo_flow
@@ -30,7 +30,7 @@ class ImpiantoConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(f"{KIND_STUFA}:{user_input[CONF_POWER]}")
             self._abort_if_unique_id_configured()
             data = {k: v for k, v in user_input.items() if k != STUFA_NAME and v not in (None, "")}
-            return self.async_create_entry(title=user_input[STUFA_NAME], data={**data, CONF_KIND: KIND_STUFA}, options={})
+            return self.async_create_entry(title=user_input[STUFA_NAME], data={**data, CONF_KIND: KIND_STUFA, **self._adopt(KIND_STUFA)}, options={})
         return self.async_show_form(step_id="stufa", data_schema=stufa_flow.source_schema(with_name=True))
 
     async def async_step_termostato(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -38,8 +38,13 @@ class ImpiantoConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(f"{KIND_TERMOSTATO}:{user_input[CONF_CLIMATE]}")
             self._abort_if_unique_id_configured()
             data = {k: v for k, v in user_input.items() if k != TERMO_NAME and v not in (None, "")}
-            return self.async_create_entry(title=user_input[TERMO_NAME], data={**data, CONF_KIND: KIND_TERMOSTATO}, options={})
+            return self.async_create_entry(title=user_input[TERMO_NAME], data={**data, CONF_KIND: KIND_TERMOSTATO, **self._adopt(KIND_TERMOSTATO)}, options={})
         return self.async_show_form(step_id="termostato", data_schema=termo_flow.source_schema(with_name=True))
+
+    def _adopt(self, kind: str) -> dict[str, str]:
+        """Una voce nuova adotta le entita' e i dati rimasti da una voce vecchia eliminata a mano (stessi entity_id)."""
+        orphan = orphan_for_kind(self.hass, kind)
+        return {CONF_MIGRATED_FROM: orphan[0], CONF_LEGACY_DOMAIN: orphan[1]} if orphan else {}
 
     # ------------------------------------------------------------------ importazione dalle integrazioni precedenti
     async def async_step_importa(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

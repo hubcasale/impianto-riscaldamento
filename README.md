@@ -32,6 +32,8 @@ La migrazione è automatica e **mantiene gli id delle entità** (quindi grafici,
 4. *Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Impianto riscaldamento*: compare la voce **«Importa le integrazioni precedenti»**. Confermala: ogni voce vecchia diventa una voce nuova e quella vecchia viene rimossa.
 5. Se la dashboard non mostra le schede, svuota la cache del browser (sul tablet con Fully Kiosk: *Cancella cache*).
 
+Se hai eliminato a mano una voce vecchia prima di importare, le sue entità restano orfane nel registro: aggiungendo **a mano** una voce dello stesso tipo (stufa o termostato) la nuova le adotta, con gli stessi id e i dati salvati; vanno ripetute solo le scelte dei collegamenti e le preferenze.
+
 Le due vecchie integrazioni non possono restare installate insieme alla nuova (definiscono le stesse schede).
 
 I comandi interni e i nomi delle schede sono rimasti uguali (`stufa_pellet/*`, `termostato_riscaldamento/*`, `custom:stufa-pellet-card`, `custom:termostato-card`): le dashboard e la scheda panoramica non vanno cambiate.

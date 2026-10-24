@@ -26,6 +26,23 @@ def legacy_entries(hass: HomeAssistant) -> list[ConfigEntry]:
     return [e for dom in LEGACY_DOMAINS for e in hass.config_entries.async_entries(dom) if e.entry_id not in done]
 
 
+def orphan_for_kind(hass: HomeAssistant, kind: str) -> tuple[str, str] | None:
+    """Entita' rimaste nel registro di una voce vecchia che non esiste piu' (eliminata a mano prima dell'importazione).
+
+    Se si aggiunge una voce nuova dello stesso tipo le adotta: stessi entity_id e stessi dati salvati.
+    Restituisce (id della voce vecchia, dominio vecchio) oppure None.
+    """
+    for ent in er.async_get(hass).entities.values():
+        if LEGACY_DOMAINS.get(ent.platform) != kind:
+            continue
+        if ent.config_entry_id is not None and hass.config_entries.async_get_entry(ent.config_entry_id) is not None:
+            continue
+        old_id = ent.unique_id.split("_", 1)[0]
+        if hass.config_entries.async_get_entry(old_id) is None:
+            return old_id, ent.platform
+    return None
+
+
 def import_payload(old: ConfigEntry) -> dict[str, Any]:
     """Dati per creare la voce nuova (flusso «import») dalla voce vecchia."""
     return {
@@ -50,7 +67,11 @@ async def async_migrate_legacy(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     # 2. entita': stesso entity_id, piattaforma e unique_id nuovi
     ent_reg = er.async_get(hass)
-    for ent in list(er.async_entries_for_config_entry(ent_reg, old_id)):
+    mine = {e.entity_id: e for e in er.async_entries_for_config_entry(ent_reg, old_id)}
+    for ent in ent_reg.entities.values():  # anche quelle rimaste senza voce (voce vecchia eliminata a mano)
+        if ent.platform == old_domain and ent.config_entry_id is None and ent.unique_id.startswith(f"{old_id}_"):
+            mine[ent.entity_id] = ent
+    for ent in list(mine.values()):
         suffix = ent.unique_id[len(old_id):] if ent.unique_id.startswith(old_id) else f"_{ent.unique_id}"
         ent_reg.async_update_entity_platform(ent.entity_id, DOMAIN, new_config_entry_id=new_id, new_unique_id=f"{new_id}{suffix}")
 

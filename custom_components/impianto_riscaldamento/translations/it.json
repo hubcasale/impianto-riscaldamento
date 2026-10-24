@@ -1,0 +1,172 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Impianto riscaldamento",
+        "description": "Che cosa vuoi aggiungere?",
+        "menu_options": {
+          "importa": "Importa le integrazioni precedenti (stufa e termostato)",
+          "stufa": "Stufa a pellet",
+          "termostato": "Termostato riscaldamento"
+        }
+      },
+      "stufa": {
+        "title": "Stufa a pellet",
+        "description": "Scegli il sensore di potenza della presa intelligente, l'interruttore che accende e spegne la stufa e, se vuoi, l'interruttore della presa (se ne mostra solo lo stato). Soglie, tempi e notifiche si impostano dopo, dalle preferenze.",
+        "data": {
+          "name": "Nome",
+          "power_sensor": "Sensore di potenza (W)",
+          "switch": "Interruttore di accensione della stufa (facoltativo)",
+          "plug": "Interruttore della presa, solo stato (facoltativo)",
+          "energy_sensor": "Sensore di energia (facoltativo)"
+        }
+      },
+      "termostato": {
+        "title": "Termostato riscaldamento",
+        "description": "Scegli il termostato da comandare. Se vuoi, indica anche il sensore di temperatura, l'entità che dice quando la casa è vuota e quella degli ospiti. Antigelo, limiti e annunci si impostano dopo, dalle preferenze.",
+        "data": {
+          "name": "Nome",
+          "climate": "Termostato",
+          "temperature_sensor": "Sensore di temperatura ambiente (facoltativo)",
+          "away_entity": "Casa vuota (facoltativo)",
+          "guests_entity": "Ospiti in casa (facoltativo)"
+        }
+      },
+      "importa": {
+        "title": "Importa",
+        "description": "Trovate queste voci delle integrazioni precedenti: {voci}. Si importano con le stesse impostazioni, lo stesso programma e gli stessi nomi delle entità (storico compreso); le voci vecchie vengono rimosse. Prima di procedere rimuovi le due integrazioni vecchie da HACS (stufa_pellet e termostato_riscaldamento) e riavvia Home Assistant."
+      }
+    },
+    "abort": {
+      "already_configured": "Già configurato",
+      "importato": "Importazione completata."
+    }
+  },
+  "options": {
+    "step": {
+      "stufa": {
+        "title": "Preferenze della stufa",
+        "description": "Le stesse preferenze della finestra dell'ingranaggio sulla scheda.",
+        "data": {
+          "off_below": "Spenta sotto (W)",
+          "ignition_above": "Accensione da (W)",
+          "shutdown_min": "Spegnimento da (W)",
+          "shutdown_max": "Spegnimento fino a (W)",
+          "shutdown_needs_switch_off": "Riconosci lo spegnimento solo con l'interruttore della stufa spento",
+          "confirm_seconds": "Conferma del cambio di stato dopo (s)",
+          "grace_seconds": "Periodo di grazia dopo l'accensione dell'interruttore della stufa (s)",
+          "restore_delay_seconds": "Ripristino dopo il ritorno del sensore (s)",
+          "sync_switch_on": "Accendi l'interruttore della stufa quando parte da sola",
+          "sync_switch_off": "Spegni l'interruttore della stufa quando è spenta",
+          "notify_events": "Avvisa a ogni accensione e spegnimento",
+          "notify_sensor_problem": "Avvisa se il sensore non è disponibile",
+          "notify_service": "Servizio di notifica (per esempio notify.telefono)",
+          "tile_color": "Colore dei fianchi",
+          "show_switch_button": "Mostra il pulsante di accensione sulla scheda"
+        }
+      },
+      "termostato": {
+        "title": "Preferenze del termostato",
+        "description": "Le stesse preferenze della finestra dell'ingranaggio sulla scheda.",
+        "data": {
+          "antigelo": "Temperatura antigelo (°C)",
+          "min_target": "Obiettivo minimo (°C)",
+          "max_target": "Obiettivo massimo (°C)",
+          "default_target": "Obiettivo predefinito (°C)",
+          "timer_max_hours": "Durata massima del timer (ore)",
+          "frost_keep_heat": "Fuori programma lascia il termostato acceso all'antigelo",
+          "away_setback": "Con la casa vuota porta il termostato all'antigelo",
+          "away_minutes": "Minuti di casa vuota prima di abbassare",
+          "notify_enabled": "Annunci vocali attivi",
+          "notify_service": "Servizio di annuncio (per esempio notify.alexa_media)",
+          "notify_targets": "Altoparlanti degli annunci"
+        }
+      }
+    }
+  },
+  "selector": {
+    "tile_color": {
+      "options": {
+        "rosso": "Rosso",
+        "arancio": "Arancio",
+        "avorio": "Avorio"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "stato": {
+        "name": "Stato",
+        "state": {
+          "spenta": "Spenta",
+          "accensione": "Accensione",
+          "accesa": "In funzione",
+          "spegnimento": "Spegnimento",
+          "non_disponibile": "Non disponibile"
+        }
+      },
+      "accensioni_oggi": {
+        "name": "Accensioni oggi"
+      },
+      "ore_in_funzione_oggi": {
+        "name": "Ore in funzione oggi"
+      },
+      "ultima_accensione": {
+        "name": "Ultima accensione"
+      },
+      "ultimo_spegnimento": {
+        "name": "Ultimo spegnimento"
+      },
+      "energia_oggi": {
+        "name": "Energia oggi"
+      },
+      "modo": {
+        "name": "Modo",
+        "state": {
+          "programma": "Programma",
+          "manuale": "Manuale",
+          "fuori_programma": "Fuori programma",
+          "timer": "Timer"
+        }
+      },
+      "prossimo_evento": {
+        "name": "Prossimo evento"
+      },
+      "termostato_modo": {
+        "name": "Modalità",
+        "state": {
+          "programma": "Programma",
+          "fuori_programma": "Fuori programma",
+          "manuale": "Manuale",
+          "timer": "Timer",
+          "spento": "Spento"
+        }
+      },
+      "termostato_prossimo_evento": {
+        "name": "Prossimo evento"
+      }
+    },
+    "binary_sensor": {
+      "in_funzione": {
+        "name": "In funzione"
+      },
+      "azioni_bloccate": {
+        "name": "Azioni bloccate"
+      },
+      "termostato_assenza_attiva": {
+        "name": "Casa vuota, antigelo"
+      },
+      "termostato_sta_scaldando": {
+        "name": "Sta scaldando"
+      }
+    },
+    "switch": {
+      "programmazione": {
+        "name": "Programmazione"
+      },
+      "termostato_programmazione": {
+        "name": "Programmazione"
+      }
+    }
+  }
+}

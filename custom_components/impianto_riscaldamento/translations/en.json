@@ -1,0 +1,172 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Impianto riscaldamento",
+        "description": "What do you want to add?",
+        "menu_options": {
+          "importa": "Import the previous integrations (stove and thermostat)",
+          "stufa": "Pellet stove",
+          "termostato": "Heating thermostat"
+        }
+      },
+      "stufa": {
+        "title": "Pellet stove",
+        "description": "Pick the power sensor of the smart plug, the switch that turns the stove on and off, and optionally the plug switch (only its state is shown). Thresholds, timings and notifications are set afterwards in the preferences.",
+        "data": {
+          "name": "Name",
+          "power_sensor": "Power sensor (W)",
+          "switch": "Stove on/off switch (optional)",
+          "plug": "Plug switch, state only (optional)",
+          "energy_sensor": "Energy sensor (optional)"
+        }
+      },
+      "termostato": {
+        "title": "Heating thermostat",
+        "description": "Pick the thermostat to control. Optionally add a temperature sensor, the entity telling when nobody is home and the guests entity. Frost protection, limits and announcements are set afterwards in the preferences.",
+        "data": {
+          "name": "Name",
+          "climate": "Thermostat",
+          "temperature_sensor": "Room temperature sensor (optional)",
+          "away_entity": "Nobody home (optional)",
+          "guests_entity": "Guests at home (optional)"
+        }
+      },
+      "importa": {
+        "title": "Import",
+        "description": "Found these entries from the previous integrations: {voci}. They are imported with the same settings, schedule and entity names (history included); the old entries are removed. Before continuing remove the two old integrations from HACS (stufa_pellet and termostato_riscaldamento) and restart Home Assistant."
+      }
+    },
+    "abort": {
+      "already_configured": "Already configured",
+      "importato": "Import completed."
+    }
+  },
+  "options": {
+    "step": {
+      "stufa": {
+        "title": "Stove preferences",
+        "description": "The same preferences as the cog window on the card.",
+        "data": {
+          "off_below": "Off below (W)",
+          "ignition_above": "Ignition from (W)",
+          "shutdown_min": "Shutdown from (W)",
+          "shutdown_max": "Shutdown up to (W)",
+          "shutdown_needs_switch_off": "Detect shutdown only while the stove switch is off",
+          "confirm_seconds": "Confirm a state change after (s)",
+          "grace_seconds": "Grace period after the stove switch turns on (s)",
+          "restore_delay_seconds": "Resume after the sensor is back (s)",
+          "sync_switch_on": "Turn the stove switch on when the stove starts by itself",
+          "sync_switch_off": "Turn the stove switch off when the stove is off",
+          "notify_events": "Notify on every start and stop",
+          "notify_sensor_problem": "Notify if the sensor is unavailable",
+          "notify_service": "Notify service (for example notify.phone)",
+          "tile_color": "Side tile colour",
+          "show_switch_button": "Show the on/off button on the card"
+        }
+      },
+      "termostato": {
+        "title": "Thermostat preferences",
+        "description": "The same preferences as the cog window on the card.",
+        "data": {
+          "antigelo": "Frost protection temperature (°C)",
+          "min_target": "Minimum target (°C)",
+          "max_target": "Maximum target (°C)",
+          "default_target": "Default target (°C)",
+          "timer_max_hours": "Maximum timer length (hours)",
+          "frost_keep_heat": "Outside the program keep the thermostat on at frost protection",
+          "away_setback": "Set back to frost protection when nobody is home",
+          "away_minutes": "Minutes of empty house before setting back",
+          "notify_enabled": "Voice announcements on",
+          "notify_service": "Announcement service (for example notify.alexa_media)",
+          "notify_targets": "Announcement speakers"
+        }
+      }
+    }
+  },
+  "selector": {
+    "tile_color": {
+      "options": {
+        "rosso": "Red",
+        "arancio": "Orange",
+        "avorio": "Ivory"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "stato": {
+        "name": "State",
+        "state": {
+          "spenta": "Off",
+          "accensione": "Ignition",
+          "accesa": "Running",
+          "spegnimento": "Shutdown",
+          "non_disponibile": "Unavailable"
+        }
+      },
+      "accensioni_oggi": {
+        "name": "Ignitions today"
+      },
+      "ore_in_funzione_oggi": {
+        "name": "Running hours today"
+      },
+      "ultima_accensione": {
+        "name": "Last ignition"
+      },
+      "ultimo_spegnimento": {
+        "name": "Last shutdown"
+      },
+      "energia_oggi": {
+        "name": "Energy today"
+      },
+      "modo": {
+        "name": "Mode",
+        "state": {
+          "programma": "Schedule",
+          "manuale": "Manual",
+          "fuori_programma": "Off schedule",
+          "timer": "Timer"
+        }
+      },
+      "prossimo_evento": {
+        "name": "Next event"
+      },
+      "termostato_modo": {
+        "name": "Mode",
+        "state": {
+          "programma": "Program",
+          "fuori_programma": "Off program",
+          "manuale": "Manual",
+          "timer": "Timer",
+          "spento": "Off"
+        }
+      },
+      "termostato_prossimo_evento": {
+        "name": "Next event"
+      }
+    },
+    "binary_sensor": {
+      "in_funzione": {
+        "name": "Running"
+      },
+      "azioni_bloccate": {
+        "name": "Actions blocked"
+      },
+      "termostato_assenza_attiva": {
+        "name": "Empty house, frost protection"
+      },
+      "termostato_sta_scaldando": {
+        "name": "Heating"
+      }
+    },
+    "switch": {
+      "programmazione": {
+        "name": "Schedule"
+      },
+      "termostato_programmazione": {
+        "name": "Schedule"
+      }
+    }
+  }
+}

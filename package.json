@@ -1,0 +1,15 @@
+{
+  "name": "impianto-riscaldamento",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stufa a pellet e termostato ambiente in un'unica integrazione di Home Assistant, con le loro schede.",
+  "license": "MIT",
+  "author": "Corrado Gamberoni",
+  "repository": {"type": "git", "url": "https://github.com/hubcasale/impianto-riscaldamento"},
+  "scripts": {
+    "install:cards": "npm ci --prefix cards/stufa && npm ci --prefix cards/termostato",
+    "build": "npm run build --prefix cards/stufa && npm run build --prefix cards/termostato",
+    "typecheck": "npm run typecheck --prefix cards/stufa && npm run typecheck --prefix cards/termostato",
+    "test": "npm test --prefix cards/stufa && npm test --prefix cards/termostato"
+  }
+}

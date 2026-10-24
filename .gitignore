@@ -1,0 +1,9 @@
+node_modules
+.test-build/
+__pycache__/
+*.pyc
+.pytest_cache/
+dev/bundle.js
+cards/*/dev/bundle.js
+.venv/
+.venv313/

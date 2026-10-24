@@ -1,0 +1,23 @@
+{
+  "domain": "impianto_riscaldamento",
+  "name": "Impianto riscaldamento",
+  "after_dependencies": [
+    "recorder",
+    "history"
+  ],
+  "codeowners": [
+    "@hubcasale"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/hubcasale/impianto-riscaldamento",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/hubcasale/impianto-riscaldamento/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

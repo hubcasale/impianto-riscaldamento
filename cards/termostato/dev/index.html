@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style id="theme"></style>
+<style>
+  body { margin:0; padding:16px; font-family:Roboto,Helvetica,Arial,sans-serif; background:var(--lovelace-background, #e9ecef); color:var(--primary-text-color); }
+  .wrap { max-width:420px; margin:0 auto; display:grid; gap:16px; }
+  ha-card { display:block; background:var(--card-background-color); border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.15); color:var(--primary-text-color); }
+  ha-icon { display:inline-block; width:1em; height:1em; }
+</style></head>
+<body><div class="wrap" id="root"></div>
+<script src="bundle.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const dark = params.get("theme") === "dark";
+if (params.get("w")) document.getElementById("root").style.maxWidth = params.get("w") + "px";
+const vars = dark
+  ? "--card-background-color:#1c1c1c;--primary-text-color:#e1e1e1;--secondary-text-color:#9b9b9b;--divider-color:#3a3a3a;--secondary-background-color:#2a2a2a;--primary-color:#03a9f4;--lovelace-background:#111;"
+  : "--card-background-color:#fff;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#e0e0e0;--secondary-background-color:#f2f2f2;--primary-color:#03a9f4;--lovelace-background:#e9ecef;";
+document.getElementById("theme").textContent = ":root{" + vars + "}";
+const modes = (params.get("modes") || "programma").split(",");
+const now = Date.now();
+const iso = (min) => new Date(now + min * 60000).toISOString();
+const SCHEDULE = { enabled: true, slots: [
+  { days:[0,1,2,3,4], start:"06:30", end:"08:30", temp:21 }, { days:[0,1,2,3,4], start:"17:00", end:"22:00", temp:20.5 },
+  { days:[5,6], start:"08:00", end:"23:00", temp:20.5 } ] };
+function mk(mode, i) {
+  const idle = mode === "spento";
+  const target = idle ? 5 : mode === "fuori_programma" ? 22.5 : mode === "timer" ? 21.5 : 20.5;
+  const settings = { antigelo:5, min_target:10, max_target:23, default_target:20.5, timer_max_hours:6, frost_keep_heat:true, away_setback:true, away_minutes:30, notify_enabled:true, notify_service:"notify.alexa_media", notify_targets:["media_player.cucina"] };
+  const away = params.get("away") === "1";
+  const info = { entry_id:"e"+i, title:"Termostato ambiente", mode, available:true, hvac_mode:"heat", hvac_action: idle ? "idle" : "heating", target, current:19.4, expected: mode==="programma"?20.5:null,
+    sources:{ climate:"climate.termostato", temperature_sensor:null, away_entity:"binary_sensor.nessuno_in_casa", guests_entity:null }, settings,
+    schedule: mode==="manuale"||mode==="spento" ? { ...SCHEDULE, enabled:false } : SCHEDULE,
+    timer_until: mode==="timer" ? iso(72) : null, timer_temp: mode==="timer" ? 21.5 : null,
+    next_event: mode==="programma"||mode==="fuori_programma" ? { kind:"set", time: iso(95), temp:20.5 } : null, away_applied: away, last_action:null,
+    entities:{ modo:"sensor.termostato_modo" } };
+  const states = {
+    "climate.termostato": { entity_id:"climate.termostato", state:"heat", attributes:{ temperature:target, current_temperature:19.4, hvac_action:info.hvac_action } },
+    "sensor.termostato_modo": { entity_id:"sensor.termostato_modo", state:mode, attributes:{ programmazione_attiva: info.schedule.enabled, timer_fino:info.timer_until, temperatura_timer:info.timer_temp, prossima_azione: info.next_event?"riscaldamento":null, prossimo_evento: info.next_event?.time ?? null, prossima_temperatura: info.next_event?.temp ?? null, assenza_attiva: away } },
+    "media_player.soggiorno": { entity_id:"media_player.soggiorno", state:"idle", attributes:{ friendly_name:"Soggiorno" } },
+    "media_player.cucina": { entity_id:"media_player.cucina", state:"idle", attributes:{ friendly_name:"Cucina" } },
+    "binary_sensor.nessuno_in_casa": { entity_id:"binary_sensor.nessuno_in_casa", state:"off", attributes:{} } };
+  return { states, callService: async () => {}, callWS: async (m) => {
+    if (m.type === "termostato_riscaldamento/info") return info;
+    return { ok: true, settings: m.settings, schedule: m.schedule, timer_until: null, target: m.temperature };
+  } };
+}
+const root = document.getElementById("root");
+const embedded = params.get("embedded") === "1";
+modes.forEach((m, i) => { const el = document.createElement("termostato-card"); el.setConfig({type:"custom:termostato-card", embedded}); el.hass = mk(m, i); root.appendChild(el); });
+const hp = params.get("help"); if (hp) setTimeout(()=>{ const d=document.querySelector('termostato-settings-dialog'); if (d) { d._help = hp; } }, 1200);
+const op = params.get("open"); if (op) setTimeout(()=>root.children[0]._open(op), 600);
+</script></body></html>

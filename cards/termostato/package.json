@@ -1,0 +1,16 @@
+{
+  "name": "termostato-riscaldamento",
+  "version": "0.1.4",
+  "description": "Scheda Lovelace del termostato ambiente con programma settimanale, timer, antigelo e preferenze, servita dall'integrazione termostato_riscaldamento.",
+  "license": "MIT",
+  "author": "Corrado Gamberoni",
+  "repository": {"type": "git", "url": "https://github.com/hubcasale/termostato-riscaldamento"},
+  "scripts": {
+    "build": "esbuild src/termostato-card.ts --bundle --format=esm --minify --outfile=../../custom_components/impianto_riscaldamento/frontend/termostato-card.js",
+    "build:dev": "esbuild src/termostato-card.ts --bundle --format=iife --outfile=dev/bundle.js",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild test/*.test.ts --bundle --platform=node --format=cjs --outdir=.test-build --log-level=warning && node --test .test-build/"
+  },
+  "devDependencies": {"esbuild": "^0.24.0", "typescript": "^5.6.0"},
+  "dependencies": {"lit": "^3.2.0"}
+}

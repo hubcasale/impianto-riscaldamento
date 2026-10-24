@@ -1,0 +1,16 @@
+{
+  "name": "stufa-pellet-monitor",
+  "version": "0.3.3",
+  "description": "Scheda Lovelace della stufa a pellet (Edilkamin Iris) con stato, grafici e preferenze, servita dall'integrazione stufa_pellet.",
+  "license": "MIT",
+  "author": "Corrado Gamberoni",
+  "repository": {"type": "git", "url": "https://github.com/hubcasale/stufa-pellet-monitor"},
+  "scripts": {
+    "build": "esbuild src/stufa-pellet-card.ts --bundle --format=esm --minify --outfile=../../custom_components/impianto_riscaldamento/frontend/stufa-pellet-card.js",
+    "build:dev": "esbuild src/stufa-pellet-card.ts --bundle --format=iife --outfile=dev/bundle.js",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild test/*.test.ts --bundle --platform=node --format=cjs --outdir=.test-build --log-level=warning && node --test .test-build/"
+  },
+  "devDependencies": {"esbuild": "^0.24.0", "typescript": "^5.6.0"},
+  "dependencies": {"lit": "^3.2.0"}
+}

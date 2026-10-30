@@ -168,5 +168,35 @@
         "name": "Schedule"
       }
     }
+  },
+  "services": {
+    "avvia_timer": {
+      "name": "Start heating timer",
+      "description": "Heats for the given time, like the card's timer: when it ends it goes back to the schedule (if enabled) or to frost protection. 0 minutes cancels the timer.",
+      "fields": {
+        "minuti": {
+          "name": "Minutes",
+          "description": "Duration in minutes, capped at the maximum set in the preferences. 0 cancels the timer."
+        },
+        "temperatura": {
+          "name": "Temperature",
+          "description": "Temperature to keep, within the preference limits. If missing, the current or default one is used."
+        },
+        "entry_id": {
+          "name": "Thermostat",
+          "description": "Only if you have more than one thermostat configured."
+        }
+      }
+    },
+    "annulla_timer": {
+      "name": "Cancel heating timer",
+      "description": "Cancels the timer: goes back to the schedule (if enabled) or to frost protection.",
+      "fields": {
+        "entry_id": {
+          "name": "Thermostat",
+          "description": "Only if you have more than one thermostat configured."
+        }
+      }
+    }
   }
 }

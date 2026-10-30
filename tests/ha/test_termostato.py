@@ -226,6 +226,27 @@ async def test_timer_survives_restart_and_expired_timer_is_closed(hass: HomeAssi
     assert ctl2.timer_until is None and calls[-1] == ("temp", 5.0)
 
 
+async def test_timer_services_for_scripts_and_assist(hass: HomeAssistant, freezer) -> None:
+    """I servizi avvia_timer / annulla_timer fanno quello che fa la scheda e restituiscono l'esito."""
+    freezer.move_to(datetime(2030, 10, 21, 12, 0, tzinfo=ROME))
+    _, ctl, calls = await _setup(hass, start=5.0, options={"timer_max_hours": 2})
+    assert hass.services.has_service(DOMAIN, "avvia_timer") and hass.services.has_service(DOMAIN, "annulla_timer")
+    res = await hass.services.async_call(DOMAIN, "avvia_timer", {"minuti": 90, "temperatura": 21.5}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    assert calls[-1] == ("temp", 21.5) and ctl.mode == "timer"
+    assert res["temperatura"] == 21.5 and res["modalita"] == "timer"
+    assert datetime.fromisoformat(res["timer_fino_a"]) == datetime(2030, 10, 21, 13, 30, tzinfo=ROME)
+    # durata oltre il tetto delle preferenze: si accorcia come dalla scheda
+    res = await hass.services.async_call(DOMAIN, "avvia_timer", {"minuti": 600}, blocking=True, return_response=True)
+    assert datetime.fromisoformat(res["timer_fino_a"]) == datetime(2030, 10, 21, 14, 0, tzinfo=ROME)
+    res = await hass.services.async_call(DOMAIN, "annulla_timer", {}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    assert res["timer_fino_a"] is None and ctl.timer_until is None and calls[-1] == ("temp", 5.0)
+    # anche senza chiedere la risposta (come da un'automazione)
+    await hass.services.async_call(DOMAIN, "avvia_timer", {"minuti": 30}, blocking=True)
+    assert ctl.timer_until is not None
+
+
 # ---------------------------------------------------------------------- casa vuota
 async def _away_setup(hass: HomeAssistant, freezer, **kw):
     freezer.move_to(datetime(2030, 10, 21, 12, 0, tzinfo=ROME))

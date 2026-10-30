@@ -99,6 +99,40 @@ Quadrante con l'ago, + e −, modalità Programma / Manuale / Timer / Spento, pr
 
 Le schede sono pensate per il tocco (tablet): nessun suggerimento al passaggio del mouse, pulsanti da almeno 44 px.
 
+### Servizi (script, automazioni, Assist)
+
+Il timer del termostato si usa anche fuori dalla scheda, con la stessa logica: tetto della durata e limiti di temperatura delle preferenze, annuncio vocale, ritorno al programma o all'antigelo.
+
+| Servizio | Campi | Risposta |
+|---|---|---|
+| `impianto_riscaldamento.avvia_timer` | `minuti` (0 annulla), `temperatura` facoltativa, `entry_id` solo con più termostati | `timer_fino_a`, `temperatura`, `modalita` |
+| `impianto_riscaldamento.annulla_timer` | `entry_id` facoltativo | come sopra |
+
+Per Assist basta uno script esposto che chiama il servizio e restituisce una frase pronta:
+
+```yaml
+script:
+  riscaldamento_a_tempo:
+    alias: Riscaldamento a tempo
+    description: Accende il riscaldamento per un certo tempo (massimo 6 ore). Con minuti 0 spegne il timer.
+    fields:
+      minuti:
+        description: Durata in minuti (2 ore = 120)
+        required: true
+        selector: {number: {min: 0, max: 360}}
+    sequence:
+      - action: impianto_riscaldamento.avvia_timer
+        data: {minuti: "{{ minuti | int }}"}
+        response_variable: esito
+      - variables:
+          risposta:
+            messaggio: >-
+              {% if esito.timer_fino_a %}Riscaldamento acceso a {{ esito.temperatura }} gradi fino alle
+              {{ (esito.timer_fino_a | as_datetime | as_local).strftime('%H:%M') }}.{% else %}Timer spento.{% endif %}
+      - stop: fatto
+        response_variable: risposta
+```
+
 ## Sviluppo
 
 ```bash

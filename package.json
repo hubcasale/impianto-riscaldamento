@@ -1,6 +1,6 @@
 {
   "name": "impianto-riscaldamento",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Stufa a pellet e termostato ambiente in un'unica integrazione di Home Assistant, con le loro schede.",
   "license": "MIT",

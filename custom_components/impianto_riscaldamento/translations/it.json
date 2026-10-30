@@ -168,5 +168,35 @@
         "name": "Programmazione"
       }
     }
+  },
+  "services": {
+    "avvia_timer": {
+      "name": "Avvia timer riscaldamento",
+      "description": "Scalda per il tempo indicato, come il timer della scheda: alla fine torna al programma (se attivo) o all'antigelo. Con 0 minuti annulla il timer.",
+      "fields": {
+        "minuti": {
+          "name": "Minuti",
+          "description": "Durata in minuti, limitata alla durata massima delle preferenze. 0 annulla il timer."
+        },
+        "temperatura": {
+          "name": "Temperatura",
+          "description": "Temperatura da mantenere, nei limiti delle preferenze. Se manca si usa quella attuale o quella predefinita."
+        },
+        "entry_id": {
+          "name": "Termostato",
+          "description": "Solo se hai più termostati configurati."
+        }
+      }
+    },
+    "annulla_timer": {
+      "name": "Annulla timer riscaldamento",
+      "description": "Annulla il timer: si torna al programma (se attivo) o all'antigelo.",
+      "fields": {
+        "entry_id": {
+          "name": "Termostato",
+          "description": "Solo se hai più termostati configurati."
+        }
+      }
+    }
   }
 }

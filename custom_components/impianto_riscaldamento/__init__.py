@@ -16,6 +16,7 @@ from homeassistant.helpers.typing import ConfigType
 from . import stufa, termostato
 from .const import CONF_KIND, CONF_MIGRATED_FROM, CONF_MIGRATION_DONE, DOMAIN, KIND_STUFA, PLATFORMS
 from .migrate import async_finish_migration, async_migrate_legacy
+from .services import async_register_services
 
 _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
@@ -35,7 +36,7 @@ def _version() -> str:
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Registra le due schede e i comandi (websocket) che usano."""
+    """Registra le due schede, i comandi (websocket) che usano e i servizi per script e Assist."""
     hass.data.setdefault(DOMAIN, {})
     version = await hass.async_add_executor_job(_version)
     for url, rel in CARDS:
@@ -47,6 +48,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             _LOGGER.warning("Scheda non trovata in %s: costruiscila con npm run build", path)
     for cmd in (*stufa.COMMANDS, *termostato.COMMANDS):
         websocket_api.async_register_command(hass, cmd)
+    async_register_services(hass)
     return True
 
 

@@ -68,7 +68,7 @@ class StateSensor(StufaEntity, SensorEntity):
             "interruttore": None if c.switch_on is None else ("acceso" if c.switch_on else "spento"),
             "presa": None if c.plug_on is None else ("accesa" if c.plug_on else "spenta"),
             "azioni_bloccate": c.blocked,
-            "livello": None if c.level is None else f"P{c.level.level}",
+            "livello": None if c.level is None else c.level.label,
             "ventilatore": None if c.level is None else c.level.fan,
             "livello_incerto": None if c.level is None else c.level.uncertain,
             "potenza_mediana": None if c.level_power is None else round(c.level_power, 1),
@@ -79,7 +79,7 @@ class LevelSensor(StufaEntity, SensorEntity):
     """Livello di potenza P1-P3 stimato dalla potenza assorbita (solo a stufa in funzione normale, dopo 45 secondi)."""
 
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = ["P1", "P2", "P3"]
+    _attr_options = ["P1", "P2", "P3", "P1/P2", "P2/P3", "P1/P3", "P1/P2/P3"]
     _attr_icon = "mdi:speedometer"
 
     def __init__(self, controller: StufaController) -> None:
@@ -88,7 +88,7 @@ class LevelSensor(StufaEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         lv = self.controller.level
-        return None if lv is None else f"P{lv.level}"
+        return None if lv is None else lv.label
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

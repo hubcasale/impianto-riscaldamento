@@ -1,6 +1,6 @@
 {
   "name": "stufa-pellet-monitor",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Scheda Lovelace della stufa a pellet (Edilkamin Iris) con stato, grafici e preferenze, servita dall'integrazione stufa_pellet.",
   "license": "MIT",
   "author": "Corrado Gamberoni",

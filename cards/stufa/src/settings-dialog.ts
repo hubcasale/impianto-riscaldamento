@@ -212,7 +212,7 @@ export class StufaSettingsDialog extends LitElement {
             </div>
 
             <div class="sec">Livelli P1-P3 e ventilatore</div>
-            <div class="row col"><div class="hint">La scheda stima il livello di potenza (P1-P3) e la percentuale del ventilatore dalla potenza della presa, con la mediana degli ultimi 2 minuti (il picco di pulizia ogni 20 minuti non conta). Qui si indica quanto assorbe la stufa a ogni livello col ventilatore al minimo e al massimo: misurali con la stufa in funzione. Dove due livelli si sovrappongono la stima è segnata con «≈».</div></div>
+            <div class="row col"><div class="hint">La scheda stima il livello di potenza (P1-P3) e la percentuale del ventilatore dalla potenza della presa, con la mediana degli ultimi 2 minuti (il picco di pulizia ogni 20 minuti non conta). Qui si indica quanto assorbe la stufa a ogni livello col ventilatore al minimo e al massimo: misurali con la stufa in funzione. Dove due livelli si sovrappongono (di solito P1 col ventilatore alto e P2 col ventilatore basso) la scheda mostra entrambi, per esempio «P1/P2», e la percentuale del ventilatore manca.</div></div>
             ${LEVEL_FIELDS.map((f) => this._numRow(f))}
 
             <div class="sec">Comportamento</div>

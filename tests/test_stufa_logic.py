@@ -254,27 +254,30 @@ def test_sync_after_restart_does_not_count_an_ignition():
 
 # --- livello di potenza e ventilatore dalla presa (misure del 1/11/2026)
 def test_level_plateaus_measured():
-    cases = {57: (1, 0), 72: (1, 100), 67: (2, 0), 104: (2, 100), 106: (3, 0), 141: (3, 100)}
-    for watt, (level, fan) in cases.items():
-        e = estimate_level(watt, S, previous=level)
-        assert (e.level, e.fan) == (level, fan), watt
+    cases = {57: (1, 0), 60: (1, 16), 67.5: None, 104: (2, 100), 106: (3, 0), 141: (3, 90), 145: (3, 100)}
+    for watt, expected in cases.items():
+        e = estimate_level(watt, S)
+        if expected is None:
+            assert e.uncertain
+        else:
+            assert (e.level, e.fan) == expected, watt
 
 
 def test_level_fan_percentage_inside_range():
     e = estimate_level(85.5, S)          # meta' di P2 (67-104)
-    assert e.level == 2 and e.fan == 50 and not e.uncertain
-    e = estimate_level(123.5, S)         # meta' di P3 (106-141)
+    assert e.level == 2 and e.fan == 50 and not e.uncertain and e.label == "P2"
+    e = estimate_level(125.5, S)         # meta' di P3 (106-145)
     assert e.level == 3 and e.fan == 50
 
 
-def test_level_overlap_is_uncertain_and_sticky():
-    # 69 W sta in P1 col ventilatore alto e in P2 col ventilatore basso: si tiene il livello di prima
-    assert estimate_level(69, S, previous=1).level == 1
-    assert estimate_level(69, S, previous=2).level == 2
-    e = estimate_level(69, S, previous=None)
-    assert e.uncertain
-    # senza livello precedente vince l'intervallo il cui centro e' piu' vicino
-    assert e.level == 1
+def test_level_overlap_is_not_decided():
+    # 72-76 W sta in P1 col ventilatore alto e in P2 col ventilatore basso: non si sceglie, ne' livello ne' percentuale
+    for watt in (66, 70, 75.1, 76):
+        e = estimate_level(watt, S)
+        assert e.uncertain and e.level is None and e.fan is None, watt
+        assert e.candidates == (1, 2) and e.label == "P1/P2"
+    assert estimate_level(65, S).level == 1           # sotto il minimo di P2 (meno la tolleranza)
+    assert estimate_level(77.6, S).level == 2         # sopra il massimo di P1 (piu' la tolleranza)
 
 
 def test_level_outside_ranges_clamps():
@@ -282,8 +285,8 @@ def test_level_outside_ranges_clamps():
     assert (low.level, low.fan) == (1, 0)
     high = estimate_level(200, S)
     assert (high.level, high.fan) == (3, 100)
-    gap = estimate_level(105, S, previous=2)   # fra P2 al massimo (104) e P3 al minimo (106)
-    assert gap.uncertain and gap.level == 2
+    gap = estimate_level(105, S)               # fra P2 al massimo (104) e P3 al minimo (106)
+    assert gap.uncertain and gap.label == "P2/P3"
 
 
 def test_level_settings_normalized_and_saved():

@@ -47,13 +47,14 @@ class Settings:
     tile_color: str = "rosso"
     show_switch_button: bool = True
     # potenza assorbita (W) a ogni livello P col ventilatore al minimo e al massimo: servono a stimare P1-P3 e la percentuale del
-    # ventilatore dalla sola presa (valori misurati su Edilkamin: 57/72 W a P1, 67/104 W a P2, 106/141 W a P3)
+    # ventilatore dalla sola presa (misurati su Edilkamin: 57/72 W a P1, 67/104 W a P2, 106/141 W a P3; i massimi di P1 e P3 sono alzati di qualche watt
+    # perche' col tempo la potenza al massimo sale: 72-75 W a P1, fino a 143-151 W a P3)
     p1_min: float = 57.0
-    p1_max: float = 72.0
+    p1_max: float = 76.0
     p2_min: float = 67.0
     p2_max: float = 104.0
     p3_min: float = 106.0
-    p3_max: float = 141.0
+    p3_max: float = 145.0
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Settings":
@@ -121,16 +122,28 @@ def valid_power(value: Any) -> float | None:
 
 LEVEL_WINDOW_SECONDS = 120    # finestra della mediana: i picchi brevi (pulizia del crogiolo ogni 20 minuti) pesano poco
 LEVEL_MIN_SECONDS = 45        # prima di tanto dall'inizio del funzionamento la stufa si sta ancora assestando: nessuna stima
-LEVEL_TOLERANCE = 3.0         # W oltre i limiti di un livello entro cui si considera ancora possibile
+LEVEL_TOLERANCE = 1.5         # W oltre i limiti di un livello entro cui si considera ancora possibile
 
 
 @dataclass(frozen=True)
 class LevelEstimate:
-    """Livello di potenza (1-3) e percentuale del ventilatore stimati dalla potenza assorbita."""
+    """Livelli di potenza (1-3) possibili a quella potenza e percentuale del ventilatore (solo se il livello e' uno)."""
 
-    level: int
-    fan: int
-    uncertain: bool
+    candidates: tuple[int, ...]
+    fan: int | None
+
+    @property
+    def uncertain(self) -> bool:
+        return len(self.candidates) > 1
+
+    @property
+    def level(self) -> int | None:
+        return self.candidates[0] if len(self.candidates) == 1 else None
+
+    @property
+    def label(self) -> str:
+        """«P2», oppure «P1/P2» se a quella potenza due livelli sono possibili."""
+        return "/".join(f"P{n}" for n in self.candidates)
 
 
 class PowerWindow:
@@ -178,26 +191,22 @@ class PowerWindow:
         return parts[-1][0]
 
 
-def estimate_level(power: float, s: Settings, previous: int | None = None) -> LevelEstimate:
+def estimate_level(power: float, s: Settings) -> LevelEstimate:
     """Livello P1-P3 e percentuale del ventilatore dalla potenza (di solito la mediana degli ultimi minuti).
 
     Ogni livello ha un intervallo di potenza fra ventilatore al minimo e al massimo; la percentuale e' la posizione nell'intervallo.
-    Dove due intervalli si sovrappongono (o quasi) la stima e' incerta: si tiene il livello di prima, se e' fra i possibili.
+    Dove due intervalli si sovrappongono (P1 col ventilatore alto e P2 col ventilatore basso) i livelli possibili sono piu' d'uno:
+    non si sceglie e la percentuale non c'e'.
     """
     ranges = {n: (getattr(s, f"p{n}_min"), getattr(s, f"p{n}_max")) for n in (1, 2, 3)}
     cands = [n for n, (lo, hi) in ranges.items() if lo - LEVEL_TOLERANCE <= power <= hi + LEVEL_TOLERANCE]
     if not cands:
         cands = [min(ranges, key=lambda n: min(abs(power - ranges[n][0]), abs(power - ranges[n][1])))]
-
-    if len(cands) == 1:
-        level = cands[0]
-    elif previous in cands:
-        level = previous  # type: ignore[assignment]
-    else:
-        level = min(cands, key=lambda n: abs(power - (ranges[n][0] + ranges[n][1]) / 2))
-    lo, hi = ranges[level]
+    if len(cands) > 1:
+        return LevelEstimate(candidates=tuple(cands), fan=None)
+    lo, hi = ranges[cands[0]]
     fan = 0.0 if hi <= lo else min(1.0, max(0.0, (power - lo) / (hi - lo)))
-    return LevelEstimate(level=level, fan=round(fan * 100), uncertain=len(cands) > 1)
+    return LevelEstimate(candidates=(cands[0],), fan=round(fan * 100))
 
 
 def classify(power: float | None, switch_on: bool | None, s: Settings) -> str:

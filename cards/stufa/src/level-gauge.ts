@@ -15,18 +15,19 @@ function arc(cx: number, cy: number, r: number, fromDeg: number, toDeg: number):
   return `M${pt(fromDeg)} A${r} ${r} 0 0 1 ${pt(toDeg)}`;
 }
 
-/** Semicerchio in tre tratti (P1, P2, P3): quello del livello stimato e' colorato, gli altri restano spenti; al centro la sigla. */
-export function levelGaugeSvg(level: number | null, uncertain = false): string {
+/** Semicerchio in tre tratti (P1, P2, P3): quelli dei livelli possibili sono colorati, gli altri restano spenti; al centro la sigla. */
+export function levelGaugeSvg(levels: number[]): string {
   const segs = [0, 1, 2]
     .map((i) => {
       const from = 180 - i * 60 - 2.5;
       const to = 180 - (i + 1) * 60 + 2.5;
-      const on = level === i + 1;
+      const on = levels.includes(i + 1);
       return `<path d="${arc(45, 44, 34, from, to)}" fill="none" stroke="${on ? LEVEL_COLORS[i] : "var(--divider-color, #cfcfcf)"}" stroke-width="9" stroke-linecap="butt" opacity="${on ? 1 : 0.55}"/>`;
     })
     .join("");
-  const label = level === null ? "–" : `${uncertain ? "≈" : ""}P${level}`;
-  return `<svg viewBox="0 0 90 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${segs}<text x="45" y="45" text-anchor="middle" font-size="${label.length > 2 ? 15 : 18}" font-weight="700" fill="currentColor">${label}</text></svg>`;
+  const label = levels.length === 0 ? "–" : levels.map((n) => `P${n}`).join("/");
+  const size = label.length > 5 ? 10 : label.length > 2 ? 13 : 18;
+  return `<svg viewBox="0 0 90 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${segs}<text x="45" y="45" text-anchor="middle" font-size="${size}" font-weight="700" fill="currentColor">${label}</text></svg>`;
 }
 
 /** Ventolina a quattro pale. */

@@ -381,11 +381,21 @@ const levelField = (n: 1 | 2 | 3, kind: "min" | "max"): NumberField => ({
 /** Potenza assorbita a ogni livello: da qui la scheda stima P1-P3 e la percentuale del ventilatore. */
 export const LEVEL_FIELDS: NumberField[] = [1, 2, 3].flatMap((n) => [levelField(n as 1 | 2 | 3, "min"), levelField(n as 1 | 2 | 3, "max")]);
 
-/** «P2 · ventilatore 40 %», oppure vuoto se la stima non c'è ancora; il «≈» avverte che a quella potenza due livelli sono possibili. */
-export function levelText(level: string | null, fan: number | null, uncertain: boolean): string {
-  if (!level) return "";
-  const fanText = fan === null ? "" : ` · ventilatore ${Math.round(fan)} %`;
-  return `${uncertain ? "≈ " : ""}${level}${fanText}`;
+/** Livelli indicati da «P2» o, dove due sono possibili, «P1/P2»: [2] oppure [1, 2]. */
+export function parseLevels(level: string | null): number[] {
+  if (!level) return [];
+  return level
+    .split("/")
+    .map((p) => Number(p.replace(/^P/, "")))
+    .filter((n) => n === 1 || n === 2 || n === 3);
+}
+
+/** «P2 · ventilatore 40 %», «P1 o P2 · ventilatore non stimabile» dove due livelli sono possibili, vuoto se la stima non c'e' ancora. */
+export function levelText(level: string | null, fan: number | null): string {
+  const levels = parseLevels(level);
+  if (levels.length === 0) return "";
+  if (levels.length > 1) return `${levels.map((n) => `P${n}`).join(" o ")} · ventilatore non stimabile`;
+  return `P${levels[0]}${fan === null ? "" : ` · ventilatore ${Math.round(fan)} %`}`;
 }
 
 export const BEHAVIOUR_FIELDS: NumberField[] = [

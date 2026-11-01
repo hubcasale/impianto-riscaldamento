@@ -48,7 +48,6 @@ class StufaController:
         self.window = PowerWindow()
         self.level: LevelEstimate | None = None
         self.level_power: float | None = None
-        self._last_level: int | None = None
         self.switch_on: bool | None = None
         self.energy_today: float | None = None
         self._energy_base: dict[str, Any] = {}
@@ -207,8 +206,7 @@ class StufaController:
         if median is None:
             return
         self.level_power = median
-        self.level = estimate_level(median, self.settings, self._last_level)
-        self._last_level = self.level.level
+        self.level = estimate_level(median, self.settings)
 
     # ------------------------------------------------------------------ programmazione e timer
     CATCH_UP = timedelta(minutes=10)     # dopo un riavvio si recupera al massimo l'ultimo evento degli ultimi 10 minuti
@@ -366,7 +364,7 @@ class StufaController:
     def level_info(self) -> dict[str, Any]:
         lv = self.level
         return {
-            "level": None if lv is None else lv.level,
+            "level": None if lv is None else lv.label,
             "fan": None if lv is None else lv.fan,
             "uncertain": None if lv is None else lv.uncertain,
             "power": None if self.level_power is None else round(self.level_power, 1),

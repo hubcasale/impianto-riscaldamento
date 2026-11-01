@@ -338,3 +338,24 @@ async def test_level_and_fan_estimated_from_power(hass: HomeAssistant, freezer) 
     await hass.async_block_till_done()
     assert hass.states.get(level_id).state == "unknown"
     assert hass.states.get(fan_id).state == "unknown"
+
+
+async def test_level_overlap_shows_both_levels(hass: HomeAssistant, freezer) -> None:
+    """Dove due livelli sono possibili (P1 col ventilatore alto, P2 col basso) si mostrano entrambi e non c'e' percentuale."""
+    from homeassistant.helpers import entity_registry as er
+
+    entry = await _setup(hass, options={"confirm_seconds": 0})
+    reg = er.async_get(hass)
+    level_id = reg.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_livello_potenza")
+    fan_id = reg.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_ventilatore")
+
+    hass.states.async_set(POWER, "73.0", {"unit_of_measurement": "W"})
+    await hass.async_block_till_done()
+    for _ in range(3):
+        freezer.tick(timedelta(seconds=20))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert hass.states.get(level_id).state == "P1/P2"
+    assert hass.states.get(fan_id).state == "unknown"
+    attrs = hass.states.get(_state_entity(hass, entry)).attributes
+    assert attrs["livello"] == "P1/P2" and attrs["ventilatore"] is None and attrs["livello_incerto"] is True

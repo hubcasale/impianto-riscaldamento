@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { fanSpinSeconds, fanSvg, levelGaugeSvg } from "./level-gauge";
-import { STATE_COLOR, STATE_LABEL, STATE_TONE, asState, fmt, formatDuration, gaugeModel, levelText, modeView, stateSegments, toNumber, type Seg } from "./card-logic";
+import { STATE_COLOR, STATE_LABEL, STATE_TONE, asState, fmt, formatDuration, gaugeModel, levelText, modeView, parseLevels, stateSegments, toNumber, type Seg } from "./card-logic";
 import { stoveSvg } from "./stove-svg";
 import "./info-dialog";
 import "./charts-dialog";
@@ -166,7 +166,6 @@ export class StufaPelletCard extends LitElement {
       blocked: a.azioni_bloccate === true,
       level: typeof a.livello === "string" ? a.livello : null,
       fan: toNumber(a.ventilatore),
-      levelUncertain: a.livello_incerto === true,
       ignitions: num("accensioni_oggi"),
       hours: num("ore_in_funzione_oggi"),
       energy: num("energia_oggi"),
@@ -218,10 +217,10 @@ export class StufaPelletCard extends LitElement {
                   <div class="muted">potenza della presa</div>
                 </div>
                 ${lv.level
-                  ? html`<div class="est" role="img" aria-label=${levelText(lv.level, lv.fan, lv.levelUncertain)} title="Stima dalla potenza assorbita (mediana degli ultimi 2 minuti)">
-                      <div class="lg">${unsafeSVG(levelGaugeSvg(Number(lv.level.slice(1)), lv.levelUncertain))}</div>
+                  ? html`<div class="est" role="img" aria-label=${levelText(lv.level, lv.fan)} title="Stima dalla potenza assorbita (mediana degli ultimi 2 minuti)">
+                      <div class="lg">${unsafeSVG(levelGaugeSvg(parseLevels(lv.level)))}</div>
                       <div class="fan">
-                        <div class="fanicon" style=${`--spin:${fanSpinSeconds(lv.fan) ?? 0}s`}>${unsafeSVG(fanSvg())}</div>
+                        <div class="fanicon" style=${`--spin:${fanSpinSeconds(lv.fan) ?? 1.5}s`}>${unsafeSVG(fanSvg())}</div>
                         <div class="fv">${lv.fan === null ? "–" : `${Math.round(lv.fan)} %`}</div>
                       </div>
                     </div>`

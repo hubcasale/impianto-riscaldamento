@@ -13,12 +13,17 @@ test("ventolina: giro piu' veloce con piu' ventilatore, ferma senza stima", () =
 
 test("indicatore dei livelli: un solo tratto colorato e la sigla al centro", () => {
   const coloured = (svg: string) => (svg.match(/stroke="#/g) ?? []).length;
-  assert.equal(coloured(levelGaugeSvg(2)), 1);
-  assert.match(levelGaugeSvg(2), />P2</);
-  assert.match(levelGaugeSvg(3, true), />≈P3</);
-  assert.equal(coloured(levelGaugeSvg(null)), 0);
-  assert.match(levelGaugeSvg(null), />–</);
-  assert.equal((levelGaugeSvg(1).match(/<path/g) ?? []).length, 3);
+  assert.equal(coloured(levelGaugeSvg([2])), 1);
+  assert.match(levelGaugeSvg([2]), />P2</);
+  assert.equal(coloured(levelGaugeSvg([])), 0);
+  assert.match(levelGaugeSvg([]), />–</);
+  assert.equal((levelGaugeSvg([1]).match(/<path/g) ?? []).length, 3);
+});
+
+test("indicatore dei livelli: dove due livelli sono possibili si colorano entrambi", () => {
+  const coloured = (svg: string) => (svg.match(/stroke="#/g) ?? []).length;
+  assert.equal(coloured(levelGaugeSvg([1, 2])), 2);
+  assert.match(levelGaugeSvg([1, 2]), />P1\/P2</);
 });
 
 test("ventolina: quattro pale", () => {

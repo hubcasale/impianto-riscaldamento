@@ -64,11 +64,11 @@ I sei valori sono nelle preferenze («Livelli P1-P3 e ventilatore»). Quelli pre
 
 | | ventilatore al minimo | ventilatore al massimo |
 |---|---|---|
-| P1 | 57 W | 72 W |
+| P1 | 57 W | 76 W |
 | P2 | 67 W | 104 W |
-| P3 | 106 W | 141 W |
+| P3 | 106 W | 145 W |
 
-Dove due intervalli si sovrappongono (P1 al massimo e P2 al minimo, 67-72 W) la stima è segnata con «≈» e si tiene il livello di prima. Per i vostri valori: mettete la stufa su ogni livello, con il ventilatore al minimo e poi al massimo, aspettate 3 minuti e leggete la potenza stabile.
+Il massimo di P1 e di P3 è alzato di qualche watt rispetto alla misura (72 e 141 W), perché col tempo la potenza al massimo sale (72-75 W a P1, fino a 143-151 W a P3). Dove due intervalli si sovrappongono (P1 col ventilatore alto e P2 col ventilatore basso, circa 66-77 W) la stufa non permette di distinguerli: la scheda mostra entrambi («P1/P2», con i due tratti colorati), il sensore del livello vale «P1/P2» e la percentuale del ventilatore manca (sensore non disponibile) finché la potenza non esce da quella fascia. Per i vostri valori: mettete la stufa su ogni livello, con il ventilatore al minimo e poi al massimo, aspettate 3 minuti e leggete la potenza stabile.
 
 ### La scheda
 

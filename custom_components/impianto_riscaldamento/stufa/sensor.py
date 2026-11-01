@@ -76,7 +76,7 @@ class StateSensor(StufaEntity, SensorEntity):
 
 
 class LevelSensor(StufaEntity, SensorEntity):
-    """Livello di potenza P1-P3 stimato dalla potenza assorbita (solo a stufa in funzione normale, dopo circa un minuto e mezzo)."""
+    """Livello di potenza P1-P3 stimato dalla potenza assorbita (solo a stufa in funzione normale, dopo 45 secondi)."""
 
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["P1", "P2", "P3"]

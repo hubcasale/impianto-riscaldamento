@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
+import { fanSpinSeconds, fanSvg, levelGaugeSvg } from "./level-gauge";
 import { STATE_COLOR, STATE_LABEL, STATE_TONE, asState, fmt, formatDuration, gaugeModel, levelText, modeView, stateSegments, toNumber, type Seg } from "./card-logic";
 import { stoveSvg } from "./stove-svg";
 import "./info-dialog";
@@ -212,9 +213,19 @@ export class StufaPelletCard extends LitElement {
             <div class="stove">${unsafeSVG(stoveSvg(lv.state, s.tile_color))}</div>
             <div class="side">
               <div class="power">
-                <div class="big">${fmt(lv.power, lv.power !== null && lv.power % 1 ? 1 : 0)}<span> W</span></div>
-                <div class="muted">potenza della presa</div>
-                ${lv.level ? html`<div class="level" title="Stima dalla potenza assorbita (mediana degli ultimi minuti)">${levelText(lv.level, lv.fan, lv.levelUncertain)}</div>` : nothing}
+                <div class="pw">
+                  <div class="big">${fmt(lv.power, lv.power !== null && lv.power % 1 ? 1 : 0)}<span> W</span></div>
+                  <div class="muted">potenza della presa</div>
+                </div>
+                ${lv.level
+                  ? html`<div class="est" role="img" aria-label=${levelText(lv.level, lv.fan, lv.levelUncertain)} title="Stima dalla potenza assorbita (mediana degli ultimi 2 minuti)">
+                      <div class="lg">${unsafeSVG(levelGaugeSvg(Number(lv.level.slice(1)), lv.levelUncertain))}</div>
+                      <div class="fan">
+                        <div class="fanicon" style=${`--spin:${fanSpinSeconds(lv.fan) ?? 0}s`}>${unsafeSVG(fanSvg())}</div>
+                        <div class="fv">${lv.fan === null ? "–" : `${Math.round(lv.fan)} %`}</div>
+                      </div>
+                    </div>`
+                  : nothing}
               </div>
               <div class="gauge" aria-label="Potenza e soglie">
                 <div class="bar">
@@ -266,7 +277,19 @@ export class StufaPelletCard extends LitElement {
     .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
     .title { font-size: 1.15rem; font-weight: 600; }
     .muted { color: var(--secondary-text-color, #727272); font-size: 0.8rem; }
-    .level { margin-top: 4px; font-size: 0.95rem; font-weight: 600; }
+    .power { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+    .est { display: flex; align-items: center; gap: 12px; }
+    .lg { width: 78px; color: var(--primary-text-color, #212121); }
+    .lg svg { width: 100%; height: auto; display: block; }
+    .fan { display: flex; align-items: center; gap: 6px; }
+    .fanicon { width: 34px; height: 34px; color: var(--secondary-text-color, #727272); }
+    .fanicon svg { width: 100%; height: 100%; display: block; animation: spin var(--spin, 2s) linear infinite; }
+    .fv { font-size: 1.05rem; font-weight: 600; white-space: nowrap; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .fanicon svg { animation: none; } }
+    .compact .lg { width: 66px; }
+    .compact .fanicon { width: 28px; height: 28px; }
+    .compact .fv { font-size: 0.95rem; }
     .errbox { margin-top: 8px; padding: 10px; border-radius: 10px; background: rgba(220, 38, 38, 0.1); color: #b91c1c; font-size: 0.9rem; }
     .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: var(--secondary-background-color, #eee); }
     .pill i { width: 9px; height: 9px; border-radius: 50%; background: #9aa1ad; }

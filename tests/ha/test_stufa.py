@@ -308,7 +308,7 @@ async def test_plug_optional_and_editable(hass: HomeAssistant, hass_ws_client) -
 
 
 async def test_level_and_fan_estimated_from_power(hass: HomeAssistant, freezer) -> None:
-    """A stufa in funzione normale, dopo un minuto e mezzo, compaiono livello P e percentuale del ventilatore."""
+    """A stufa in funzione normale, dopo 45 secondi, compaiono livello P e percentuale del ventilatore."""
     from homeassistant.helpers import entity_registry as er
 
     entry = await _setup(hass, options={"confirm_seconds": 0})
@@ -322,10 +322,12 @@ async def test_level_and_fan_estimated_from_power(hass: HomeAssistant, freezer) 
     await hass.async_block_till_done()
     assert hass.states.get(level_id).state == "unknown"                     # troppo presto: la stufa si sta assestando
 
-    for _ in range(6):                                                      # 6 x 20 s = 2 minuti
+    for i in range(1, 4):                                                   # 3 x 20 s = 1 minuto (la stima parte dopo 45 s)
         freezer.tick(timedelta(seconds=20))
         async_fire_time_changed(hass)
         await hass.async_block_till_done()
+        if i == 2:
+            assert hass.states.get(level_id).state == "unknown"            # 40 s: ancora presto
     assert hass.states.get(level_id).state == "P2"
     assert hass.states.get(fan_id).state == "50"
     attrs = hass.states.get(_state_entity(hass, entry)).attributes

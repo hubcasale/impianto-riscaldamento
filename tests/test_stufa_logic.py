@@ -310,3 +310,15 @@ def test_power_window_follows_a_real_change():
     assert w.median(t(160)) == 104.0     # il nuovo valore ha superato meta' del tempo
     w.clear()
     assert w.median(t(160)) is None and w.span(t(160)) == 0
+
+
+def test_power_window_default_ignores_a_40_second_cleaning_peak():
+    w = PowerWindow()      # finestra predefinita
+    w.add(t(0), 67.0)
+    w.add(t(60), 85.0)     # picco di pulizia: circa 40 s, +15 W
+    w.add(t(100), 67.0)
+    assert w.median(t(120)) == 67.0
+    # un cambio vero (dura) diventa la mediana in circa un minuto
+    w.add(t(130), 104.0)
+    assert w.median(t(150)) == 67.0
+    assert w.median(t(200)) == 104.0

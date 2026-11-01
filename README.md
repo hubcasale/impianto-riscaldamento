@@ -58,7 +58,7 @@ Un dispositivo «Stufa a pellet» con `sensor.stufa_a_pellet_stato` (spenta / ac
 
 ### Livello P1-P3 e ventilatore (stima)
 
-Con la stufa in funzione normale la scheda mostra sotto la potenza, per esempio, «P2 · ventilatore 40 %». Non viene dalla stufa (non comunica i suoi livelli) ma dalla **potenza della presa**: si prende la mediana degli ultimi 3 minuti (il picco di pulizia del crogiolo, ogni 20 minuti, non conta) e la si colloca nell'intervallo di potenza di ogni livello, fra ventilatore al minimo (0 %) e al massimo (100 %). La stima compare dopo circa un minuto e mezzo di funzionamento, perché prima la stufa si sta assestando.
+Con la stufa in funzione normale la scheda mostra, a destra della potenza, un semicerchio con i tre livelli (quello stimato è colorato, con la sigla P1-P3 al centro) e una ventolina che gira più in fretta quanto più alto è il ventilatore, con la percentuale accanto (per esempio «P2» e «40 %»). Non viene dalla stufa (non comunica i suoi livelli) ma dalla **potenza della presa**: si prende la mediana degli ultimi 2 minuti (il picco di pulizia del crogiolo, ogni 20 minuti, non conta) e la si colloca nell'intervallo di potenza di ogni livello, fra ventilatore al minimo (0 %) e al massimo (100 %). La stima compare dopo 45 secondi di funzionamento normale e segue un cambio con circa 1 minuto di ritardo, perché prima la stufa si sta assestando.
 
 I sei valori sono nelle preferenze («Livelli P1-P3 e ventilatore»). Quelli predefiniti sono misurati su una stufa Edilkamin:
 

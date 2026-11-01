@@ -16,14 +16,14 @@ const now = Date.now();
 function mk(state, i) {
   const power = { accesa: 128.2, spenta: 1.2, accensione: 312, spegnimento: 127.4, non_disponibile: null }[state];
   const since = new Date(now - (state === "accesa" ? 95 : 7) * 60000).toISOString();
-  const settings = { off_below:5, ignition_above:250, shutdown_min:126, shutdown_max:129, shutdown_needs_switch_off:true, confirm_seconds:10, grace_seconds:15, restore_delay_seconds:30, sync_switch_on:true, sync_switch_off:true, notify_events:true, notify_sensor_problem:true, notify_service:"", tile_color: params.get("tile") || ["rosso","arancio","avorio","rosso","rosso"][i], show_switch_button:true };
+  const settings = { off_below:5, ignition_above:250, shutdown_min:126, shutdown_max:129, shutdown_needs_switch_off:true, confirm_seconds:10, grace_seconds:15, restore_delay_seconds:30, sync_switch_on:true, sync_switch_off:true, notify_events:true, notify_sensor_problem:true, notify_service:"", tile_color: params.get("tile") || ["rosso","arancio","avorio","rosso","rosso"][i], show_switch_button:true, p1_min:57, p1_max:72, p2_min:67, p2_max:104, p3_min:106, p3_max:141 };
   const info = { entry_id:"e"+i, title:"Stufa a pellet", state, power, since, sources:{power_sensor:"sensor.presa_power", switch:"switch.stufa", plug:"switch.presa", energy_sensor:null}, settings,
     schedule:{ enabled:true, slots:[{days:[0,1,2,3,4],start:"06:30",end:"08:30"},{days:[0,1,2,3,4],start:"17:00",end:"22:00"},{days:[5,6],start:"08:00",end:"23:00"}] },
     mode: params.get("mode") || (state==="accesa"?"programma":"manuale"), timer_until: params.get("mode")==="timer" ? new Date(now+47*60000).toISOString() : null,
     next_event:{kind:"off", time:new Date(now+95*60000).toISOString()}, last_action:null,
     entities:{ modo:"sensor.stufa_modo", stato:"sensor.stufa_stato", accensioni_oggi:"sensor.acc", ore_in_funzione_oggi:"sensor.ore" } };
   const hass = { states:{
-    "sensor.stufa_stato":{entity_id:"sensor.stufa_stato", state, attributes:{potenza:power, da:since, interruttore: state==="spenta"?"spento":"acceso", presa: params.get("presa")==="off"?"spenta":"accesa", azioni_bloccate: state==="non_disponibile"}},
+    "sensor.stufa_stato":{entity_id:"sensor.stufa_stato", state, attributes:{potenza:power, da:since, interruttore: state==="spenta"?"spento":"acceso", presa: params.get("presa")==="off"?"spenta":"accesa", azioni_bloccate: state==="non_disponibile", livello: state==="accesa" ? (params.get("livello")||"P2") : null, ventilatore: state==="accesa" ? Number(params.get("fan")||40) : null, livello_incerto: params.get("incerto")==="1"}},
     "sensor.stufa_modo":{entity_id:"sensor.stufa_modo", state: info.mode, attributes:{programmazione_attiva:true, timer_fino:info.timer_until, prossima_azione:"spegnimento", prossimo_evento:info.next_event.time}},
     "sensor.acc":{entity_id:"sensor.acc", state:"2", attributes:{}}, "sensor.ore":{entity_id:"sensor.ore", state:"3.4", attributes:{}},
     "sensor.presa_power":{entity_id:"sensor.presa_power", state: power===null?"unavailable":String(power), attributes:{}},

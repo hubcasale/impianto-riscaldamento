@@ -119,8 +119,8 @@ def valid_power(value: Any) -> float | None:
     return None if math.isnan(v) or math.isinf(v) else v
 
 
-LEVEL_WINDOW_SECONDS = 180    # finestra della mediana: i picchi brevi (pulizia del crogiolo ogni 20 minuti) pesano poco
-LEVEL_MIN_SECONDS = 90        # prima di tanto dall'inizio del funzionamento la stufa si sta ancora assestando: nessuna stima
+LEVEL_WINDOW_SECONDS = 120    # finestra della mediana: i picchi brevi (pulizia del crogiolo ogni 20 minuti) pesano poco
+LEVEL_MIN_SECONDS = 45        # prima di tanto dall'inizio del funzionamento la stufa si sta ancora assestando: nessuna stima
 LEVEL_TOLERANCE = 3.0         # W oltre i limiti di un livello entro cui si considera ancora possibile
 
 

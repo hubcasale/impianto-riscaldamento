@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
-import { STATE_COLOR, STATE_LABEL, STATE_TONE, asState, fmt, formatDuration, gaugeModel, modeView, stateSegments, toNumber, type Seg } from "./card-logic";
+import { STATE_COLOR, STATE_LABEL, STATE_TONE, asState, fmt, formatDuration, gaugeModel, levelText, modeView, stateSegments, toNumber, type Seg } from "./card-logic";
 import { stoveSvg } from "./stove-svg";
 import "./info-dialog";
 import "./charts-dialog";
@@ -163,6 +163,9 @@ export class StufaPelletCard extends LitElement {
       switchOn: swState === "on" ? true : swState === "off" ? false : null,
       plugOn: plugState === "on" ? true : plugState === "off" ? false : null,
       blocked: a.azioni_bloccate === true,
+      level: typeof a.livello === "string" ? a.livello : null,
+      fan: toNumber(a.ventilatore),
+      levelUncertain: a.livello_incerto === true,
       ignitions: num("accensioni_oggi"),
       hours: num("ore_in_funzione_oggi"),
       energy: num("energia_oggi"),
@@ -211,6 +214,7 @@ export class StufaPelletCard extends LitElement {
               <div class="power">
                 <div class="big">${fmt(lv.power, lv.power !== null && lv.power % 1 ? 1 : 0)}<span> W</span></div>
                 <div class="muted">potenza della presa</div>
+                ${lv.level ? html`<div class="level" title="Stima dalla potenza assorbita (mediana degli ultimi minuti)">${levelText(lv.level, lv.fan, lv.levelUncertain)}</div>` : nothing}
               </div>
               <div class="gauge" aria-label="Potenza e soglie">
                 <div class="bar">
@@ -262,6 +266,7 @@ export class StufaPelletCard extends LitElement {
     .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
     .title { font-size: 1.15rem; font-weight: 600; }
     .muted { color: var(--secondary-text-color, #727272); font-size: 0.8rem; }
+    .level { margin-top: 4px; font-size: 0.95rem; font-weight: 600; }
     .errbox { margin-top: 8px; padding: 10px; border-radius: 10px; background: rgba(220, 38, 38, 0.1); color: #b91c1c; font-size: 0.9rem; }
     .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: var(--secondary-background-color, #eee); }
     .pill i { width: 9px; height: 9px; border-radius: 50%; background: #9aa1ad; }

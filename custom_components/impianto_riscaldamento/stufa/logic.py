@@ -46,6 +46,14 @@ class Settings:
     notify_service: str = ""
     tile_color: str = "rosso"
     show_switch_button: bool = True
+    # potenza assorbita (W) a ogni livello P col ventilatore al minimo e al massimo: servono a stimare P1-P3 e la percentuale del
+    # ventilatore dalla sola presa (valori misurati su Edilkamin: 57/72 W a P1, 67/104 W a P2, 106/141 W a P3)
+    p1_min: float = 57.0
+    p1_max: float = 72.0
+    p2_min: float = 67.0
+    p2_max: float = 104.0
+    p3_min: float = 106.0
+    p3_max: float = 141.0
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Settings":
@@ -76,8 +84,14 @@ class Settings:
         lo = min(self.shutdown_min, self.shutdown_max)
         hi = max(self.shutdown_min, self.shutdown_max)
         color = self.tile_color if self.tile_color in TILE_COLORS else "rosso"
+        levels = {
+            f"p{n}_{k}": v
+            for n in (1, 2, 3)
+            for k, v in zip(("min", "max"), sorted((max(0.0, getattr(self, f"p{n}_min")), max(0.0, getattr(self, f"p{n}_max")))))
+        }
         return replace(
             self,
+            **levels,
             shutdown_min=lo,
             shutdown_max=hi,
             off_below=max(0.0, self.off_below),
@@ -103,6 +117,87 @@ def valid_power(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return None if math.isnan(v) or math.isinf(v) else v
+
+
+LEVEL_WINDOW_SECONDS = 180    # finestra della mediana: i picchi brevi (pulizia del crogiolo ogni 20 minuti) pesano poco
+LEVEL_MIN_SECONDS = 90        # prima di tanto dall'inizio del funzionamento la stufa si sta ancora assestando: nessuna stima
+LEVEL_TOLERANCE = 3.0         # W oltre i limiti di un livello entro cui si considera ancora possibile
+
+
+@dataclass(frozen=True)
+class LevelEstimate:
+    """Livello di potenza (1-3) e percentuale del ventilatore stimati dalla potenza assorbita."""
+
+    level: int
+    fan: int
+    uncertain: bool
+
+
+class PowerWindow:
+    """Letture di potenza degli ultimi minuti con la loro durata: la mediana pesata sul tempo ignora i picchi brevi."""
+
+    def __init__(self, seconds: int = LEVEL_WINDOW_SECONDS) -> None:
+        self.seconds = seconds
+        self.samples: list[tuple[datetime, float]] = []
+
+    def clear(self) -> None:
+        self.samples.clear()
+
+    def add(self, now: datetime, power: float) -> None:
+        self.samples.append((now, power))
+        start = now - timedelta(seconds=self.seconds)
+        # si tiene l'ultima lettura precedente alla finestra: ne copre l'inizio
+        while len(self.samples) > 1 and self.samples[1][0] <= start:
+            self.samples.pop(0)
+
+    def span(self, now: datetime) -> float:
+        """Secondi dalla prima lettura (al massimo la finestra)."""
+        if not self.samples:
+            return 0.0
+        return min(float(self.seconds), (now - self.samples[0][0]).total_seconds())
+
+    def median(self, now: datetime) -> float | None:
+        if not self.samples:
+            return None
+        start = now - timedelta(seconds=self.seconds)
+        parts: list[tuple[float, float]] = []
+        for i, (t, v) in enumerate(self.samples):
+            end = self.samples[i + 1][0] if i + 1 < len(self.samples) else now
+            weight = (end - max(t, start)).total_seconds()
+            if weight > 0:
+                parts.append((v, weight))
+        if not parts:
+            return self.samples[-1][1]
+        parts.sort()
+        half = sum(w for _, w in parts) / 2
+        acc = 0.0
+        for v, w in parts:
+            acc += w
+            if acc >= half:
+                return v
+        return parts[-1][0]
+
+
+def estimate_level(power: float, s: Settings, previous: int | None = None) -> LevelEstimate:
+    """Livello P1-P3 e percentuale del ventilatore dalla potenza (di solito la mediana degli ultimi minuti).
+
+    Ogni livello ha un intervallo di potenza fra ventilatore al minimo e al massimo; la percentuale e' la posizione nell'intervallo.
+    Dove due intervalli si sovrappongono (o quasi) la stima e' incerta: si tiene il livello di prima, se e' fra i possibili.
+    """
+    ranges = {n: (getattr(s, f"p{n}_min"), getattr(s, f"p{n}_max")) for n in (1, 2, 3)}
+    cands = [n for n, (lo, hi) in ranges.items() if lo - LEVEL_TOLERANCE <= power <= hi + LEVEL_TOLERANCE]
+    if not cands:
+        cands = [min(ranges, key=lambda n: min(abs(power - ranges[n][0]), abs(power - ranges[n][1])))]
+
+    if len(cands) == 1:
+        level = cands[0]
+    elif previous in cands:
+        level = previous  # type: ignore[assignment]
+    else:
+        level = min(cands, key=lambda n: abs(power - (ranges[n][0] + ranges[n][1]) / 2))
+    lo, hi = ranges[level]
+    fan = 0.0 if hi <= lo else min(1.0, max(0.0, (power - lo) / (hi - lo)))
+    return LevelEstimate(level=level, fan=round(fan * 100), uncertain=len(cands) > 1)
 
 
 def classify(power: float | None, switch_on: bool | None, s: Settings) -> str:

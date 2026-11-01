@@ -339,7 +339,20 @@ export function summaryLines(i: SummaryInput, nowMs: number): SummaryLine[] {
 
 // ---- preferenze
 export interface NumberField {
-  key: "off_below" | "shutdown_min" | "shutdown_max" | "ignition_above" | "confirm_seconds" | "grace_seconds" | "restore_delay_seconds";
+  key:
+    | "off_below"
+    | "shutdown_min"
+    | "shutdown_max"
+    | "ignition_above"
+    | "confirm_seconds"
+    | "grace_seconds"
+    | "restore_delay_seconds"
+    | "p1_min"
+    | "p1_max"
+    | "p2_min"
+    | "p2_max"
+    | "p3_min"
+    | "p3_max";
   label: string;
   hint: string;
   unit: string;
@@ -355,6 +368,26 @@ export const THRESHOLD_FIELDS: NumberField[] = [
   { key: "ignition_above", label: "Accensione sopra", hint: "Oltre questa potenza l'accenditore è acceso: la stufa si sta accendendo.", unit: "W", min: 20, max: 2000, step: 5 },
 ];
 
+const levelField = (n: 1 | 2 | 3, kind: "min" | "max"): NumberField => ({
+  key: `p${n}_${kind}` as NumberField["key"],
+  label: `P${n}, ventilatore al ${kind === "min" ? "minimo" : "massimo"}`,
+  hint: kind === "min" ? `Potenza assorbita a P${n} col ventilatore al minimo.` : `Potenza assorbita a P${n} col ventilatore al massimo.`,
+  unit: "W",
+  min: 0,
+  max: 3000,
+  step: 0.5,
+});
+
+/** Potenza assorbita a ogni livello: da qui la scheda stima P1-P3 e la percentuale del ventilatore. */
+export const LEVEL_FIELDS: NumberField[] = [1, 2, 3].flatMap((n) => [levelField(n as 1 | 2 | 3, "min"), levelField(n as 1 | 2 | 3, "max")]);
+
+/** «P2 · ventilatore 40 %», oppure vuoto se la stima non c'è ancora; il «≈» avverte che a quella potenza due livelli sono possibili. */
+export function levelText(level: string | null, fan: number | null, uncertain: boolean): string {
+  if (!level) return "";
+  const fanText = fan === null ? "" : ` · ventilatore ${Math.round(fan)} %`;
+  return `${uncertain ? "≈ " : ""}${level}${fanText}`;
+}
+
 export const BEHAVIOUR_FIELDS: NumberField[] = [
   { key: "confirm_seconds", label: "Conferma del cambio di stato", hint: "Un nuovo stato deve durare tanti secondi prima di essere accettato (filtra i picchi).", unit: "s", min: 0, max: 600, step: 1 },
   { key: "grace_seconds", label: "Periodo di grazia dell'interruttore", hint: "Dopo aver acceso l'interruttore della stufa si aspetta tanti secondi prima di spegnerlo se la stufa risulta spenta.", unit: "s", min: 0, max: 600, step: 1 },
@@ -367,6 +400,9 @@ export function validateSettings(s: StufaSettings): string[] {
   if (!(s.off_below < s.shutdown_min)) errs.push("La soglia di spenta deve essere minore dell'inizio della fascia di spegnimento.");
   if (s.shutdown_min > s.shutdown_max) errs.push("L'inizio della fascia di spegnimento non può superare la fine.");
   if (!(s.shutdown_max < s.ignition_above)) errs.push("La fascia di spegnimento deve stare sotto la soglia di accensione.");
+  for (const n of [1, 2, 3] as const) {
+    if (s[`p${n}_min`] > s[`p${n}_max`]) errs.push(`P${n}: la potenza col ventilatore al minimo non può superare quella al massimo.`);
+  }
   return errs;
 }
 

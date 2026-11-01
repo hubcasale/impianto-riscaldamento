@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { dialogStyles } from "./dialog-style";
-import { BEHAVIOUR_FIELDS, THRESHOLD_FIELDS, TILE_COLORS, clampStep, fmt, validateSettings, type NumberField } from "./card-logic";
+import { BEHAVIOUR_FIELDS, LEVEL_FIELDS, THRESHOLD_FIELDS, TILE_COLORS, clampStep, fmt, validateSettings, type NumberField } from "./card-logic";
 import type { HomeAssistant, StufaInfo, StufaSettings } from "./types";
 
 interface Suggestion {
@@ -210,6 +210,10 @@ export class StufaSettingsDialog extends LitElement {
                   : html`<div class="hint">Lo storico non basta per proporre soglie: accendi e spegni la stufa almeno una volta con il sensore attivo.</div>`
                 : nothing}
             </div>
+
+            <div class="sec">Livelli P1-P3 e ventilatore</div>
+            <div class="row col"><div class="hint">La scheda stima il livello di potenza (P1-P3) e la percentuale del ventilatore dalla potenza della presa, con la mediana degli ultimi 3 minuti (il picco di pulizia ogni 20 minuti non conta). Qui si indica quanto assorbe la stufa a ogni livello col ventilatore al minimo e al massimo: misurali con la stufa in funzione. Dove due livelli si sovrappongono la stima è segnata con «≈».</div></div>
+            ${LEVEL_FIELDS.map((f) => this._numRow(f))}
 
             <div class="sec">Comportamento</div>
             ${BEHAVIOUR_FIELDS.map((f) => this._numRow(f))}

@@ -28,6 +28,12 @@ export interface StufaSettings {
   notify_service: string;
   tile_color: "rosso" | "arancio" | "avorio";
   show_switch_button: boolean;
+  p1_min: number;
+  p1_max: number;
+  p2_min: number;
+  p2_max: number;
+  p3_min: number;
+  p3_max: number;
 }
 
 export interface StufaInfo {

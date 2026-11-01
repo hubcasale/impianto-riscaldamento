@@ -16,8 +16,8 @@ from homeassistant.util import dt as dt_util
 from .const import CONF_ENERGY, CONF_PLUG, CONF_POWER, CONF_SWITCH, DOMAIN, SIGNAL_UPDATE, STORAGE_VERSION, TICK_SECONDS
 from .schedule import Schedule, decide_mode
 from .logic import (
-    RUNNING_STATES, STATE_IGNITION, STATE_OFF, STATE_SHUTDOWN, STATE_UNAVAILABLE, Blocker, DailyStats, Settings,
-    StateTracker, classify, decide_switch_action, format_duration, valid_power,
+    LEVEL_MIN_SECONDS, RUNNING_STATES, STATE_IGNITION, STATE_OFF, STATE_ON, STATE_SHUTDOWN, STATE_UNAVAILABLE, Blocker, DailyStats,
+    LevelEstimate, PowerWindow, Settings, StateTracker, classify, decide_switch_action, estimate_level, format_duration, valid_power,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +45,10 @@ class StufaController:
         self.blocker = Blocker()
         self.stats = DailyStats()
         self.power: float | None = None
+        self.window = PowerWindow()
+        self.level: LevelEstimate | None = None
+        self.level_power: float | None = None
+        self._last_level: int | None = None
         self.switch_on: bool | None = None
         self.energy_today: float | None = None
         self._energy_base: dict[str, Any] = {}
@@ -172,6 +176,7 @@ class StufaController:
             self._notified_unavailable = False
             self._notify("sensor", "Stufa a pellet", "Sensore di potenza di nuovo disponibile: le azioni automatiche sono riprese.")
         self._update_energy(now)
+        self._update_level(now, power, state)
         # azioni sull'interruttore (con la lettura grezza della potenza, come faceva il vecchio pacchetto)
         if not startup:
             since_on = None
@@ -186,6 +191,24 @@ class StufaController:
                     self._notify("event", "Stufa a pellet", f"Potenza minima rilevata, interruttore spento (potenza {power:.1f} W).")
         self._run_schedule(now, startup)
         async_dispatcher_send(self.hass, self.signal)
+
+    @callback
+    def _update_level(self, now: datetime, power: float | None, state: str) -> None:
+        """Livello P1-P3 e ventilatore dalla mediana della potenza degli ultimi minuti, solo a stufa in funzione normale."""
+        if state != STATE_ON or power is None:
+            self.window.clear()
+            self.level, self.level_power = None, None
+            return
+        self.window.add(now, power)
+        if self.window.span(now) < LEVEL_MIN_SECONDS:
+            self.level, self.level_power = None, None
+            return
+        median = self.window.median(now)
+        if median is None:
+            return
+        self.level_power = median
+        self.level = estimate_level(median, self.settings, self._last_level)
+        self._last_level = self.level.level
 
     # ------------------------------------------------------------------ programmazione e timer
     CATCH_UP = timedelta(minutes=10)     # dopo un riavvio si recupera al massimo l'ultimo evento degli ultimi 10 minuti
@@ -340,6 +363,15 @@ class StufaController:
     def blocked(self) -> bool:
         return self.blocker.blocked
 
+    def level_info(self) -> dict[str, Any]:
+        lv = self.level
+        return {
+            "level": None if lv is None else lv.level,
+            "fan": None if lv is None else lv.fan,
+            "uncertain": None if lv is None else lv.uncertain,
+            "power": None if self.level_power is None else round(self.level_power, 1),
+        }
+
     def info(self) -> dict[str, Any]:
         return {
             "entry_id": self.entry.entry_id,
@@ -354,6 +386,7 @@ class StufaController:
                 "energy_sensor": self.energy_entity,
             },
             "settings": self.settings.to_dict(),
+            "level": self.level_info(),
             "schedule": self.schedule.to_dict(),
             "mode": self.mode,
             "timer_until": self.timer_until.isoformat() if self.timer_until else None,

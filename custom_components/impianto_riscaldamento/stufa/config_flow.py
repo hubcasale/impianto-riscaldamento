@@ -56,6 +56,12 @@ def settings_schema(s: Settings) -> vol.Schema:
                 )
             ),
             vol.Required("show_switch_button", default=s.show_switch_button): selector.BooleanSelector(),
+            vol.Required("p1_min", default=s.p1_min): _number(0, 3000, 0.5, "W"),
+            vol.Required("p1_max", default=s.p1_max): _number(0, 3000, 0.5, "W"),
+            vol.Required("p2_min", default=s.p2_min): _number(0, 3000, 0.5, "W"),
+            vol.Required("p2_max", default=s.p2_max): _number(0, 3000, 0.5, "W"),
+            vol.Required("p3_min", default=s.p3_min): _number(0, 3000, 0.5, "W"),
+            vol.Required("p3_max", default=s.p3_max): _number(0, 3000, 0.5, "W"),
         }
     )
 

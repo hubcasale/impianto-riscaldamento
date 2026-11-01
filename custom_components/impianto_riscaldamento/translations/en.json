@@ -62,7 +62,13 @@
           "notify_sensor_problem": "Notify if the sensor is unavailable",
           "notify_service": "Notify service (for example notify.phone)",
           "tile_color": "Side tile colour",
-          "show_switch_button": "Show the on/off button on the card"
+          "show_switch_button": "Show the on/off button on the card",
+          "p1_min": "P1, fan at minimum (W)",
+          "p1_max": "P1, fan at maximum (W)",
+          "p2_min": "P2, fan at minimum (W)",
+          "p2_max": "P2, fan at maximum (W)",
+          "p3_min": "P3, fan at minimum (W)",
+          "p3_max": "P3, fan at maximum (W)"
         }
       },
       "termostato": {
@@ -104,6 +110,12 @@
           "spegnimento": "Shutdown",
           "non_disponibile": "Unavailable"
         }
+      },
+      "livello_potenza": {
+        "name": "Power level"
+      },
+      "ventilatore": {
+        "name": "Fan"
       },
       "accensioni_oggi": {
         "name": "Ignitions today"

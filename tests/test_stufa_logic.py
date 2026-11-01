@@ -9,7 +9,7 @@ sys.modules["logic"] = logic
 spec.loader.exec_module(logic)
 from logic import (  # noqa: E402
     STATE_IGNITION, STATE_OFF, STATE_ON, STATE_SHUTDOWN, STATE_UNAVAILABLE, Blocker, DailyStats, Settings,
-    StateTracker, classify, decide_switch_action, format_duration, suggest_thresholds, valid_power,
+    StateTracker, PowerWindow, classify, decide_switch_action, estimate_level, format_duration, suggest_thresholds, valid_power,
 )
 
 S = Settings()
@@ -250,3 +250,63 @@ def test_sync_after_restart_does_not_count_an_ignition():
     assert d.running_seconds == 600
     d.on_change(t(700), STATE_IGNITION, STATE_ON)
     assert d.ignitions == 0
+
+
+# --- livello di potenza e ventilatore dalla presa (misure del 1/11/2026)
+def test_level_plateaus_measured():
+    cases = {57: (1, 0), 72: (1, 100), 67: (2, 0), 104: (2, 100), 106: (3, 0), 141: (3, 100)}
+    for watt, (level, fan) in cases.items():
+        e = estimate_level(watt, S, previous=level)
+        assert (e.level, e.fan) == (level, fan), watt
+
+
+def test_level_fan_percentage_inside_range():
+    e = estimate_level(85.5, S)          # meta' di P2 (67-104)
+    assert e.level == 2 and e.fan == 50 and not e.uncertain
+    e = estimate_level(123.5, S)         # meta' di P3 (106-141)
+    assert e.level == 3 and e.fan == 50
+
+
+def test_level_overlap_is_uncertain_and_sticky():
+    # 69 W sta in P1 col ventilatore alto e in P2 col ventilatore basso: si tiene il livello di prima
+    assert estimate_level(69, S, previous=1).level == 1
+    assert estimate_level(69, S, previous=2).level == 2
+    e = estimate_level(69, S, previous=None)
+    assert e.uncertain
+    # senza livello precedente vince l'intervallo il cui centro e' piu' vicino
+    assert e.level == 1
+
+
+def test_level_outside_ranges_clamps():
+    low = estimate_level(40, S)
+    assert (low.level, low.fan) == (1, 0)
+    high = estimate_level(200, S)
+    assert (high.level, high.fan) == (3, 100)
+    gap = estimate_level(105, S, previous=2)   # fra P2 al massimo (104) e P3 al minimo (106)
+    assert gap.uncertain and gap.level == 2
+
+
+def test_level_settings_normalized_and_saved():
+    s = Settings.from_dict({"p1_min": 80, "p1_max": 60, "p3_max": "150"})
+    assert (s.p1_min, s.p1_max) == (60.0, 80.0)      # ordinati
+    assert s.p3_max == 150.0
+    assert Settings.from_dict(s.to_dict()) == s
+
+
+def test_power_window_median_ignores_cleaning_peak():
+    w = PowerWindow(180)
+    w.add(t(0), 67.0)
+    w.add(t(100), 85.0)      # picco di pulizia
+    w.add(t(140), 67.0)
+    assert w.median(t(180)) == 67.0
+    assert abs(w.span(t(180)) - 180) < 1e-9
+
+
+def test_power_window_follows_a_real_change():
+    w = PowerWindow(180)
+    w.add(t(0), 67.0)
+    w.add(t(60), 104.0)      # cambio di livello
+    assert w.median(t(100)) == 67.0      # 60 s contro 40 s: ancora il valore di prima
+    assert w.median(t(160)) == 104.0     # il nuovo valore ha superato meta' del tempo
+    w.clear()
+    assert w.median(t(160)) is None and w.span(t(160)) == 0

@@ -62,7 +62,13 @@
           "notify_sensor_problem": "Avvisa se il sensore non è disponibile",
           "notify_service": "Servizio di notifica (per esempio notify.telefono)",
           "tile_color": "Colore dei fianchi",
-          "show_switch_button": "Mostra il pulsante di accensione sulla scheda"
+          "show_switch_button": "Mostra il pulsante di accensione sulla scheda",
+          "p1_min": "P1, ventilatore al minimo (W)",
+          "p1_max": "P1, ventilatore al massimo (W)",
+          "p2_min": "P2, ventilatore al minimo (W)",
+          "p2_max": "P2, ventilatore al massimo (W)",
+          "p3_min": "P3, ventilatore al minimo (W)",
+          "p3_max": "P3, ventilatore al massimo (W)"
         }
       },
       "termostato": {
@@ -104,6 +110,12 @@
           "spegnimento": "Spegnimento",
           "non_disponibile": "Non disponibile"
         }
+      },
+      "livello_potenza": {
+        "name": "Livello di potenza"
+      },
+      "ventilatore": {
+        "name": "Ventilatore"
       },
       "accensioni_oggi": {
         "name": "Accensioni oggi"

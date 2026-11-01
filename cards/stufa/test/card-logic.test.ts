@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  asState, clampStep, fmt, formatDuration, gaugeModel, niceAxis, parseNumeric, resample, stateAt, stateSegments, summaryLines, toNumber, validateSettings,
+  LEVEL_FIELDS, asState, clampStep, fmt, formatDuration, gaugeModel, levelText, niceAxis, parseNumeric, resample, stateAt, stateSegments, summaryLines, toNumber, validateSettings,
 } from "../src/card-logic";
 import { stoveSvg } from "../src/stove-svg";
 import type { StufaSettings } from "../src/types";
@@ -10,6 +10,7 @@ const S: StufaSettings = {
   off_below: 5, ignition_above: 250, shutdown_min: 126, shutdown_max: 129, shutdown_needs_switch_off: true,
   confirm_seconds: 10, grace_seconds: 15, restore_delay_seconds: 30, sync_switch_on: true, sync_switch_off: true,
   notify_events: true, notify_sensor_problem: true, notify_service: "", tile_color: "rosso", show_switch_button: true,
+  p1_min: 57, p1_max: 72, p2_min: 67, p2_max: 104, p3_min: 106, p3_max: 141,
 };
 
 test("fmt e toNumber", () => {
@@ -188,4 +189,14 @@ test("modeView: le quattro modalità", () => {
   const t = modeView("timer", false, null, now + 47 * 60000, now);
   assert.equal(t.label, "Timer");
   assert.match(t.detail, /tra 47 min/);
+});
+
+test("livelli P1-P3 e ventilatore: testo e controlli", () => {
+  assert.equal(levelText("P2", 40, false), "P2 · ventilatore 40 %");
+  assert.equal(levelText("P1", 83.4, true), "≈ P1 · ventilatore 83 %");
+  assert.equal(levelText("P3", null, false), "P3");
+  assert.equal(levelText(null, 40, false), "");
+  assert.equal(LEVEL_FIELDS.length, 6);
+  assert.deepEqual(LEVEL_FIELDS.map((f) => f.key), ["p1_min", "p1_max", "p2_min", "p2_max", "p3_min", "p3_max"]);
+  assert.equal(validateSettings({ ...S, p2_min: 110 }).length, 1);
 });

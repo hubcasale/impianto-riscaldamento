@@ -305,3 +305,34 @@ async def test_plug_optional_and_editable(hass: HomeAssistant, hass_ws_client) -
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     assert "plug" not in entry.data and entry.data["switch"] == SWITCH
+
+
+async def test_level_and_fan_estimated_from_power(hass: HomeAssistant, freezer) -> None:
+    """A stufa in funzione normale, dopo un minuto e mezzo, compaiono livello P e percentuale del ventilatore."""
+    from homeassistant.helpers import entity_registry as er
+
+    entry = await _setup(hass, options={"confirm_seconds": 0})
+    reg = er.async_get(hass)
+    level_id = reg.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_livello_potenza")
+    fan_id = reg.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_ventilatore")
+    assert level_id and fan_id
+    assert hass.states.get(level_id).state == "unknown"
+
+    hass.states.async_set(POWER, "85.5", {"unit_of_measurement": "W"})     # meta' di P2
+    await hass.async_block_till_done()
+    assert hass.states.get(level_id).state == "unknown"                     # troppo presto: la stufa si sta assestando
+
+    for _ in range(6):                                                      # 6 x 20 s = 2 minuti
+        freezer.tick(timedelta(seconds=20))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert hass.states.get(level_id).state == "P2"
+    assert hass.states.get(fan_id).state == "50"
+    attrs = hass.states.get(_state_entity(hass, entry)).attributes
+    assert attrs["livello"] == "P2" and attrs["ventilatore"] == 50 and attrs["livello_incerto"] is False
+
+    # una soglia modificata cambia la stima; con la stufa spenta non c'e' piu' stima
+    hass.states.async_set(POWER, "1.0", {"unit_of_measurement": "W"})
+    await hass.async_block_till_done()
+    assert hass.states.get(level_id).state == "unknown"
+    assert hass.states.get(fan_id).state == "unknown"

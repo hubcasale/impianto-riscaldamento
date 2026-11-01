@@ -54,7 +54,21 @@ Un nuovo stato deve durare qualche secondo (conferma) prima di essere accettato,
 
 ### Che cosa crea
 
-Un dispositivo «Stufa a pellet» con `sensor.stufa_a_pellet_stato` (spenta / accensione / accesa / spegnimento / non_disponibile), accensioni e ore in funzione di oggi, ultima accensione e ultimo spegnimento, energia di oggi (se c'è un contatore), `binary_sensor` in funzione e azioni bloccate. Con l'interruttore della stufa anche il modo (programma / manuale / fuori_programma / timer), il prossimo evento e `switch.stufa_a_pellet_programmazione`.
+Un dispositivo «Stufa a pellet» con `sensor.stufa_a_pellet_stato` (spenta / accensione / accesa / spegnimento / non_disponibile), accensioni e ore in funzione di oggi, ultima accensione e ultimo spegnimento, energia di oggi (se c'è un contatore), `binary_sensor` in funzione e azioni bloccate. `sensor.stufa_a_pellet_livello_di_potenza` (P1, P2 o P3) e `sensor.stufa_a_pellet_ventilatore` (percentuale, 0 = minimo, 100 = massimo), **stimati dalla potenza assorbita** (vedi sotto). Con l'interruttore della stufa anche il modo (programma / manuale / fuori_programma / timer), il prossimo evento e `switch.stufa_a_pellet_programmazione`.
+
+### Livello P1-P3 e ventilatore (stima)
+
+Con la stufa in funzione normale la scheda mostra sotto la potenza, per esempio, «P2 · ventilatore 40 %». Non viene dalla stufa (non comunica i suoi livelli) ma dalla **potenza della presa**: si prende la mediana degli ultimi 3 minuti (il picco di pulizia del crogiolo, ogni 20 minuti, non conta) e la si colloca nell'intervallo di potenza di ogni livello, fra ventilatore al minimo (0 %) e al massimo (100 %). La stima compare dopo circa un minuto e mezzo di funzionamento, perché prima la stufa si sta assestando.
+
+I sei valori sono nelle preferenze («Livelli P1-P3 e ventilatore»). Quelli predefiniti sono misurati su una stufa Edilkamin:
+
+| | ventilatore al minimo | ventilatore al massimo |
+|---|---|---|
+| P1 | 57 W | 72 W |
+| P2 | 67 W | 104 W |
+| P3 | 106 W | 141 W |
+
+Dove due intervalli si sovrappongono (P1 al massimo e P2 al minimo, 67-72 W) la stima è segnata con «≈» e si tiene il livello di prima. Per i vostri valori: mettete la stufa su ogni livello, con il ventilatore al minimo e poi al massimo, aspettate 3 minuti e leggete la potenza stabile.
 
 ### La scheda
 

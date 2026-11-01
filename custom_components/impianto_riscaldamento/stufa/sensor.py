@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, UnitOfTime
+from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -68,7 +68,53 @@ class StateSensor(StufaEntity, SensorEntity):
             "interruttore": None if c.switch_on is None else ("acceso" if c.switch_on else "spento"),
             "presa": None if c.plug_on is None else ("accesa" if c.plug_on else "spenta"),
             "azioni_bloccate": c.blocked,
+            "livello": None if c.level is None else f"P{c.level.level}",
+            "ventilatore": None if c.level is None else c.level.fan,
+            "livello_incerto": None if c.level is None else c.level.uncertain,
+            "potenza_mediana": None if c.level_power is None else round(c.level_power, 1),
         }
+
+
+class LevelSensor(StufaEntity, SensorEntity):
+    """Livello di potenza P1-P3 stimato dalla potenza assorbita (solo a stufa in funzione normale, dopo circa un minuto e mezzo)."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["P1", "P2", "P3"]
+    _attr_icon = "mdi:speedometer"
+
+    def __init__(self, controller: StufaController) -> None:
+        super().__init__(controller, "livello_potenza")
+
+    @property
+    def native_value(self) -> str | None:
+        lv = self.controller.level
+        return None if lv is None else f"P{lv.level}"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        lv = self.controller.level
+        return {"incerto": None if lv is None else lv.uncertain, "potenza_mediana": self.controller.level_power, "stima": True}
+
+
+class FanSensor(StufaEntity, SensorEntity):
+    """Ventilatore ambiente in percentuale (0 = minimo, 100 = massimo), stimato dalla potenza assorbita."""
+
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:fan"
+
+    def __init__(self, controller: StufaController) -> None:
+        super().__init__(controller, "ventilatore")
+
+    @property
+    def native_value(self) -> int | None:
+        lv = self.controller.level
+        return None if lv is None else lv.fan
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        lv = self.controller.level
+        return {"incerto": None if lv is None else lv.uncertain, "stima": True}
 
 
 class ModeSensor(StufaEntity, SensorEntity):
@@ -170,6 +216,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     controller: StufaController = hass.data[DOMAIN][entry.entry_id]
     entities: list[SensorEntity] = [
         StateSensor(controller),
+        LevelSensor(controller),
+        FanSensor(controller),
         ModeSensor(controller),
         NextEventSensor(controller),
         IgnitionsSensor(controller),

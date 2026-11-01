@@ -20,7 +20,7 @@ from .logic import Settings, suggest_thresholds, valid_power
 from .schedule import Schedule
 
 ENTITY_KEYS = {
-    "sensor": ["stato", "modo", "prossimo_evento", "accensioni_oggi", "ore_in_funzione_oggi", "ultima_accensione", "ultimo_spegnimento", "energia_oggi"],
+    "sensor": ["stato", "livello_potenza", "ventilatore", "modo", "prossimo_evento", "accensioni_oggi", "ore_in_funzione_oggi", "ultima_accensione", "ultimo_spegnimento", "energia_oggi"],
     "binary_sensor": ["in_funzione", "azioni_bloccate"],
     "switch": ["programmazione"],
 }

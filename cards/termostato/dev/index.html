@@ -26,7 +26,7 @@ const SCHEDULE = { enabled: true, slots: [
 function mk(mode, i) {
   const idle = mode === "spento";
   const target = idle ? 5 : mode === "fuori_programma" ? 22.5 : mode === "timer" ? 21.5 : 20.5;
-  const settings = { antigelo:5, min_target:10, max_target:23, default_target:20.5, timer_max_hours:6, frost_keep_heat:true, away_setback:true, away_minutes:30, notify_enabled:true, notify_service:"notify.alexa_media", notify_targets:["media_player.cucina"] };
+  const settings = { antigelo:5, min_target:10, max_target:23, default_target:20.5, timer_max_hours:6, frost_keep_heat:true, away_setback:true, away_minutes:30, notify_enabled:true, notify_service:"notify.alexa_media", notify_targets:["media_player.cucina"], boiler_program_pause:true, boiler_program_switch:"switch.casale_cronotermostato_settimanale", boiler_climate:"climate.casale_acqua" };
   const away = params.get("away") === "1";
   const info = { entry_id:"e"+i, title:"Termostato ambiente", mode, available:true, hvac_mode:"heat", hvac_action: idle ? "idle" : "heating", target, current:19.4, expected: mode==="programma"?20.5:null,
     sources:{ climate:"climate.termostato", temperature_sensor:null, away_entity:"binary_sensor.nessuno_in_casa", guests_entity:null }, settings,

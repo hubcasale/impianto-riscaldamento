@@ -5,7 +5,7 @@ import { gaugeSvg } from "../src/gauge";
 import { HELP } from "../src/help";
 import type { SlotData, TermoSettings } from "../src/types";
 
-const S: TermoSettings = { antigelo: 5, min_target: 10, max_target: 23, default_target: 20.5, timer_max_hours: 6, frost_keep_heat: true, away_setback: true, away_minutes: 30, notify_enabled: true, notify_service: "", notify_targets: [] };
+const S: TermoSettings = { antigelo: 5, min_target: 10, max_target: 23, default_target: 20.5, timer_max_hours: 6, frost_keep_heat: true, away_setback: true, away_minutes: 30, notify_enabled: true, notify_service: "", notify_targets: [], boiler_program_pause: false, boiler_program_switch: "", boiler_climate: "" };
 
 test("fmtTemp e toNumber", () => {
   assert.equal(fmtTemp(20.5), "20,5");
@@ -96,8 +96,17 @@ test("validateSettings", () => {
   assert.match(validateSettings({ ...S, notify_service: "alexa" })[0], /notify/);
 });
 
+test("programma della caldaia: l'interruttore serve solo se la sospensione è accesa", () => {
+  assert.deepEqual(validateSettings({ ...S, boiler_program_pause: false }), []);
+  assert.match(validateSettings({ ...S, boiler_program_pause: true })[0], /interruttore/);
+  assert.deepEqual(validateSettings({ ...S, boiler_program_pause: true, boiler_program_switch: "switch.casale_cronotermostato_settimanale" }), []);
+  assert.match(validateSettings({ ...S, boiler_program_pause: true, boiler_program_switch: "casale" })[0], /switch/);
+  assert.match(validateSettings({ ...S, boiler_climate: "caldaia" })[0], /climate/);
+  assert.deepEqual(validateSettings({ ...S, boiler_climate: "climate.casale_acqua" }), []);
+});
+
 test("ogni preferenza ha la sua spiegazione completa", () => {
-  const ids = ["block_temperature", "antigelo", "min_target", "max_target", "default_target", "frost_keep_heat", "block_timer", "timer_max_hours", "block_away", "away_setback", "away_minutes", "block_notify", "notify_enabled", "notify_service", "notify_targets", "block_links", "climate", "temperature_sensor", "away_entity", "guests_entity"];
+  const ids = ["block_temperature", "antigelo", "min_target", "max_target", "default_target", "frost_keep_heat", "block_timer", "timer_max_hours", "block_away", "away_setback", "away_minutes", "block_notify", "notify_enabled", "notify_service", "notify_targets", "block_boiler", "boiler_program_pause", "boiler_program_switch", "boiler_climate", "block_links", "climate", "temperature_sensor", "away_entity", "guests_entity"];
   for (const id of ids) {
     const h = HELP[id];
     assert.ok(h, id);

@@ -247,6 +247,125 @@ async def test_timer_services_for_scripts_and_assist(hass: HomeAssistant, freeze
     assert ctl.timer_until is not None
 
 
+# ---------------------------------------------------------------------- programma della caldaia durante il timer
+PROGRAM = "switch.caldaia_programma"
+BOILER = "climate.caldaia"
+BOILER_OPTS = {"boiler_program_pause": True, "boiler_program_switch": PROGRAM, "boiler_climate": BOILER}
+
+
+def _fake_boiler(hass: HomeAssistant, program: str = "on", boiler: str = "off") -> list[tuple[str, str]]:
+    """L'interruttore del programma e la caldaia finti; il termostato continua a rispondere come prima."""
+    log: list[tuple[str, str]] = []
+    hass.states.async_set(PROGRAM, program)
+    hass.states.async_set(BOILER, boiler)
+
+    async def _off(call):
+        log.append(("programma", "off"))
+        hass.states.async_set(PROGRAM, "off")
+
+    async def _on(call):
+        log.append(("programma", "on"))
+        hass.states.async_set(PROGRAM, "on")
+
+    async def _hvac(call):
+        if call.data["entity_id"] == BOILER:
+            log.append(("caldaia", call.data["hvac_mode"]))
+            hass.states.async_set(BOILER, call.data["hvac_mode"])
+        else:
+            st = hass.states.get(CLIMATE)
+            hass.states.async_set(CLIMATE, call.data["hvac_mode"], dict(st.attributes))
+
+    hass.services.async_register("switch", "turn_off", _off)
+    hass.services.async_register("switch", "turn_on", _on)
+    hass.services.async_register("climate", "set_hvac_mode", _hvac)
+    return log
+
+
+async def test_boiler_program_is_paused_during_timer_and_resumed(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass)
+    ctl.start_timer(120, 22.0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off"), ("caldaia", "heat")]              # sospeso e, con la caldaia spenta e la stanza fredda, acceso
+    assert ctl.boiler_paused == PROGRAM and ctl.info()["boiler_program_paused"] is True
+    # il timer continua: niente di nuovo
+    await _tick(hass, freezer, datetime(2030, 10, 21, 9, 0, tzinfo=ROME))
+    assert log == [("programma", "off"), ("caldaia", "heat")]
+    # a fine timer il programma torna
+    await _tick(hass, freezer, datetime(2030, 10, 21, 10, 1, tzinfo=ROME))
+    assert ctl.timer_until is None and log[-1] == ("programma", "on") and hass.states.get(PROGRAM).state == "on"
+    assert ctl.boiler_paused is None and ctl.info()["boiler_program_paused"] is False
+
+
+async def test_boiler_program_resumed_when_timer_is_cancelled(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass, boiler="heat")
+    ctl.start_timer(120, 22.0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off")]                                   # caldaia già accesa: non si tocca
+    ctl.start_timer(0)
+    await hass.async_block_till_done()
+    assert log[-1] == ("programma", "on") and ctl.boiler_paused is None
+
+
+async def test_boiler_program_left_alone_when_off_already_or_option_off(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass, program="off")                                # spento a mano: non si sospende e non si riaccende
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    ctl.start_timer(0)
+    await hass.async_block_till_done()
+    assert log == [] and ctl.boiler_paused is None
+    # opzione spenta (predefinita): non fa niente
+    ctl.update_settings(ctl.settings.from_dict({"boiler_program_switch": PROGRAM}))
+    hass.states.async_set(PROGRAM, "on")
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    assert log == [] and hass.states.get(PROGRAM).state == "on"
+
+
+async def test_boiler_not_started_when_room_is_warm(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    _set_climate(hass, "heat", 19.0, current=23.0)
+    log = _fake_boiler(hass)
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off")]                                   # stanza già a 23 gradi: la caldaia resta spenta
+
+
+async def test_boiler_program_resumed_after_restart_when_timer_expired(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    entry, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass, boiler="heat")
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off")]
+    await hass.config_entries.async_unload(entry.entry_id)
+    freezer.move_to(datetime(2030, 10, 21, 11, 0, tzinfo=ROME))             # il timer è scaduto con Home Assistant spento
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    ctl2 = hass.data[DOMAIN][entry.entry_id]
+    assert log[-1] == ("programma", "on") and ctl2.boiler_paused is None
+
+
+async def test_boiler_program_waits_while_switch_unavailable(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass, boiler="heat")
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    hass.states.async_set(PROGRAM, "unavailable")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 9, 5, tzinfo=ROME))
+    assert ctl.boiler_paused == PROGRAM and log == [("programma", "off")]   # non risponde: ricorda e riprova
+    hass.states.async_set(PROGRAM, "off")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 9, 6, tzinfo=ROME))
+    assert log[-1] == ("programma", "on") and ctl.boiler_paused is None
+
+
 # ---------------------------------------------------------------------- casa vuota
 async def _away_setup(hass: HomeAssistant, freezer, **kw):
     freezer.move_to(datetime(2030, 10, 21, 12, 0, tzinfo=ROME))

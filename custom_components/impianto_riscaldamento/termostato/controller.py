@@ -57,6 +57,8 @@ class TermoController:
         self._away_since: datetime | None = None
         self._last_sched_check: datetime | None = None
         self._last_cmd: datetime | None = None
+        self.boiler_paused: str | None = None     # l'interruttore del programma della caldaia che abbiamo spento per il timer
+        self._boiler_busy = False
         self._store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
         self._unsubs: list = []
         self.sources = sources_of(entry.data)
@@ -93,6 +95,8 @@ class TermoController:
         self._last_sched_check = _parse_dt(saved.get("last_sched_check"))
         self.away_applied = saved.get("away_applied") is True
         self.away_override_until = _parse_dt(saved.get("away_override_until"))
+        paused = saved.get("boiler_paused")
+        self.boiler_paused = paused if isinstance(paused, str) and paused else None
         entities = [e for e in (self.climate_entity, self.temp_entity, self.away_entity, self.guests_entity) if e]
         self._unsubs.append(async_track_state_change_event(self.hass, entities, self._on_event))
         self._unsubs.append(async_track_time_interval(self.hass, self._on_tick, timedelta(seconds=TICK_SECONDS)))
@@ -118,6 +122,7 @@ class TermoController:
                 "last_sched_check": self._last_sched_check.isoformat() if self._last_sched_check else None,
                 "away_applied": self.away_applied,
                 "away_override_until": self.away_override_until.isoformat() if self.away_override_until else None,
+                "boiler_paused": self.boiler_paused,
             }
         )
 
@@ -185,7 +190,67 @@ class TermoController:
                 self._end_timer(now, "timer")
             self._run_away(now, startup)
             self._run_schedule(now, startup)
+        self._run_boiler_program(now)
         async_dispatcher_send(self.hass, self.signal)
+
+    # ------------------------------------------------------------------ programma settimanale della caldaia
+    def _run_boiler_program(self, now: datetime) -> None:
+        """Col timer in corso sospende il programma della caldaia (a fine fascia la spegnerebbe) e a fine timer lo riattiva.
+
+        Lo riattiva solo se l'ha sospeso lui: se l'interruttore era già spento (a mano) non lo tocca. Il ricordo di aver
+        sospeso sta nel file di salvataggio, così un riavvio durante il timer non lascia il programma spento per sempre.
+        """
+        if self._boiler_busy:
+            return
+        s = self.settings
+        timer_on = self.timer_until is not None and now < self.timer_until
+        if self.boiler_paused is None:
+            if timer_on and s.boiler_program_pause and s.boiler_program_switch:
+                st = self.hass.states.get(s.boiler_program_switch)
+                if st is not None and st.state == "on":
+                    self._boiler_busy = True
+                    self.hass.async_create_task(self._pause_boiler_program(s.boiler_program_switch, s.boiler_climate))
+        elif not (timer_on and s.boiler_program_pause):
+            switch = self.boiler_paused
+            st = self.hass.states.get(switch)
+            if st is not None and st.state in ("unavailable", "unknown"):
+                return                                  # non risponde: si riprova al prossimo giro
+            self._boiler_busy = True
+            self.hass.async_create_task(self._resume_boiler_program(switch, st))
+
+    async def _pause_boiler_program(self, switch: str, climate: str) -> None:
+        try:
+            await self.hass.services.async_call("switch", "turn_off", {"entity_id": switch}, blocking=True)
+            self.boiler_paused = switch
+            self._save_soon()
+            await self._start_boiler(climate)
+        except HomeAssistantError as err:
+            _LOGGER.warning("Programma della caldaia non sospeso (%s): %s", switch, err)
+        finally:
+            self._boiler_busy = False
+            async_dispatcher_send(self.hass, self.signal)
+
+    async def _start_boiler(self, climate: str) -> None:
+        """Senza programma la caldaia non parte da sola: se è spenta e la stanza è sotto l'obiettivo del timer, la accende."""
+        st = self.hass.states.get(climate) if climate else None
+        if st is None or st.state != "off":
+            return
+        _mode, _target, current, _action = self._climate()
+        if current is not None and self.timer_temp is not None and current >= self.timer_temp:
+            return
+        await self.hass.services.async_call("climate", "set_hvac_mode", {"entity_id": climate, "hvac_mode": "heat"}, blocking=True)
+
+    async def _resume_boiler_program(self, switch: str, state: Any) -> None:
+        try:
+            if state is not None and state.state != "on":
+                await self.hass.services.async_call("switch", "turn_on", {"entity_id": switch}, blocking=True)
+            self.boiler_paused = None
+            self._save_soon()
+        except HomeAssistantError as err:
+            _LOGGER.warning("Programma della caldaia non riattivato (%s): %s", switch, err)
+        finally:
+            self._boiler_busy = False
+            async_dispatcher_send(self.hass, self.signal)
 
     def _run_away(self, now: datetime, startup: bool) -> None:
         s = self.settings
@@ -442,5 +507,6 @@ class TermoController:
             "timer_temp": self.timer_temp,
             "next_event": None if nxt is None else {"kind": nxt[0], "time": nxt[1].isoformat(), "temp": nxt[2]},
             "away_applied": self.away_applied,
+            "boiler_program_paused": self.boiler_paused is not None,
             "last_action": self.last_action,
         }

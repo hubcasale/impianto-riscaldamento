@@ -26,6 +26,9 @@ export interface TermoSettings {
   notify_enabled: boolean;
   notify_service: string;
   notify_targets: string[];
+  boiler_program_pause: boolean;
+  boiler_program_switch: string;
+  boiler_climate: string;
 }
 
 /** Una fascia: giorni (0 = lunedì), "HH:MM" di inizio e fine e temperatura; se la fine non segue l'inizio finisce il giorno dopo. */
@@ -58,6 +61,7 @@ export interface TermoInfo {
   timer_temp: number | null;
   next_event: { kind: "set" | "idle"; time: string; temp: number | null } | null;
   away_applied: boolean;
+  boiler_program_paused?: boolean;
   last_action: { azione: string; motivo: string; quando: string; temperatura: number | null } | null;
   entities: Record<string, string>;
 }

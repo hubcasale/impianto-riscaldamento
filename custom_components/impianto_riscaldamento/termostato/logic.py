@@ -58,6 +58,9 @@ class Settings:
     notify_enabled: bool = True
     notify_service: str = ""              # per esempio notify.alexa_media; vuoto = nessun annuncio
     notify_targets: tuple[str, ...] = field(default_factory=tuple)
+    boiler_program_pause: bool = False    # durante il timer sospende il programma settimanale della caldaia (spegne l'interruttore)
+    boiler_program_switch: str = ""       # l'interruttore del programma settimanale della caldaia (switch.*)
+    boiler_climate: str = ""              # la caldaia da accendere se è spenta all'avvio del timer (climate.*); vuoto = non la tocca
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Settings":

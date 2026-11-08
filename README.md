@@ -93,6 +93,8 @@ La fascia agisce **solo ai cambi**: alle ore indicate accende o spegne l'interru
 
 Con la **casa vuota** il termostato va all'antigelo dopo il tempo scelto e il programma non lo scalda; al rientro il programma riprende. Si può sempre scaldare a mano, anche a casa vuota.
 
+**Programma della caldaia.** Se la caldaia ha un suo programma settimanale (per esempio il cronotermostato della Polygon), a fine fascia la spegne anche con il timer ancora in corso. Nelle preferenze, blocco *Programma della caldaia*, puoi far **sospendere** quel programma finché dura il timer: all'avvio spegne il suo interruttore (e, se indichi la caldaia e questa è spenta con la stanza sotto la temperatura del timer, la accende), a fine timer o se lo annulli lo riaccende. Lo riaccende solo se l'ha sospeso lui, e se l'interruttore non risponde riprova finché non risponde; il ricordo di averlo sospeso sopravvive a un riavvio di Home Assistant. È spento finché non scegli l'interruttore.
+
 Le azioni partono **solo ai cambi**; fra un cambio e l'altro il termostato resta libero di essere cambiato a mano.
 
 ### Che cosa crea
@@ -109,7 +111,7 @@ entry_id: ...   # solo se hai più termostati
 embedded: true  # senza cornice, per metterla dentro un'altra scheda
 ```
 
-Quadrante con l'ago, + e −, modalità Programma / Manuale / Timer / Spento, programma settimanale e preferenze in cinque blocchi (Temperature, Timer, Casa vuota, Annunci vocali, Collegamenti), ciascuno con la sua spiegazione. Con un servizio `notify.*` (per esempio `notify.alexa_media`) annuncia a voce inizio e fine del timer, i cambi del programma, la casa vuota e il rientro.
+Quadrante con l'ago, + e −, modalità Programma / Manuale / Timer / Spento, programma settimanale e preferenze in sei blocchi (Temperature, Timer, Casa vuota, Annunci vocali, Programma della caldaia, Collegamenti), ciascuno con la sua spiegazione. Con un servizio `notify.*` (per esempio `notify.alexa_media`) annuncia a voce inizio e fine del timer, i cambi del programma, la casa vuota e il rientro.
 
 Le schede sono pensate per il tocco (tablet): nessun suggerimento al passaggio del mouse, pulsanti da almeno 44 px.
 

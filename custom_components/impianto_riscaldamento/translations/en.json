@@ -85,7 +85,10 @@
           "away_minutes": "Minutes of empty house before setting back",
           "notify_enabled": "Voice announcements on",
           "notify_service": "Announcement service (for example notify.alexa_media)",
-          "notify_targets": "Announcement speakers"
+          "notify_targets": "Announcement speakers",
+          "boiler_program_pause": "Pause the boiler's weekly program while the timer runs",
+          "boiler_program_switch": "Boiler weekly program switch (for example switch.casale_cronotermostato_settimanale)",
+          "boiler_climate": "Boiler to turn on when the timer starts if it is off (optional)"
         }
       }
     }

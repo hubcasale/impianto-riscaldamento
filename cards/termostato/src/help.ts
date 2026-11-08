@@ -91,6 +91,27 @@ export const HELP: Record<string, HelpText> = {
     what: "Quali altoparlanti pronunciano gli annunci. Se non ne scegli nessuno decide il servizio.",
     when: "Scegli le stanze dove vuoi sentire gli annunci.",
   },
+  block_boiler: {
+    title: "Programma della caldaia",
+    what: "Il programma settimanale della caldaia la spegne a fine fascia anche se il timer del termostato è ancora in corso. Qui scegli di sospenderlo finché dura il timer.",
+    when: "Serve se la caldaia ha un suo programma settimanale e usi il timer per scaldare fuori fascia.",
+  },
+  boiler_program_pause: {
+    title: "Sospendi il programma col timer",
+    what: "All'avvio del timer spegne l'interruttore del programma settimanale della caldaia; a fine timer, o se lo annulli, lo riaccende. Lo riaccende solo se l'ha spento lui: se era già spento a mano non lo tocca.",
+    when: "Accendilo se la caldaia si spegne a fine fascia con il timer ancora in corso.",
+    suggested: "Acceso, se la caldaia ha un programma settimanale.",
+  },
+  boiler_program_switch: {
+    title: "Interruttore del programma",
+    what: "L'interruttore (switch) che accende e spegne il programma settimanale della caldaia, per esempio switch.casale_cronotermostato_settimanale.",
+    when: "Obbligatorio se la sospensione è accesa.",
+  },
+  boiler_climate: {
+    title: "Caldaia da accendere",
+    what: "La caldaia (climate) da accendere all'avvio del timer se è spenta e la stanza è sotto la temperatura del timer. Senza programma la caldaia non parte da sola.",
+    when: "Indicala se vuoi che il timer accenda anche la caldaia spenta. Facoltativo.",
+  },
   block_links: {
     title: "Collegamenti",
     what: "Le entità di Home Assistant che il termostato usa: il termostato da comandare, un sensore di temperatura e gli indicatori di casa vuota e ospiti.",

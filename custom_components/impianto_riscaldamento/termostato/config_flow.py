@@ -48,6 +48,13 @@ def settings_schema(s: Settings) -> vol.Schema:
             vol.Optional("notify_targets", default=list(s.notify_targets)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="media_player", multiple=True)
             ),
+            vol.Required("boiler_program_pause", default=s.boiler_program_pause): selector.BooleanSelector(),
+            vol.Optional(
+                "boiler_program_switch", description={"suggested_value": s.boiler_program_switch or None}
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="switch")),
+            vol.Optional(
+                "boiler_climate", description={"suggested_value": s.boiler_climate or None}
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="climate")),
         }
     )
 

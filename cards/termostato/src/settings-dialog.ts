@@ -6,7 +6,8 @@ import { HELP } from "./help";
 import type { HomeAssistant, TermoInfo, TermoSettings } from "./types";
 
 type NumKey = "antigelo" | "min_target" | "max_target" | "default_target" | "timer_max_hours" | "away_minutes";
-type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled";
+type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled" | "boiler_program_pause";
+type BoilerKey = "boiler_program_switch" | "boiler_climate";
 type SrcKey = "climate" | "temperature_sensor" | "away_entity" | "guests_entity";
 
 interface NumField { key: NumKey; label: string; unit: string; min: number; max: number; step: number }
@@ -32,6 +33,7 @@ const BLOCKS: Block[] = [
   { id: "timer", icon: "mdi:timer-outline", title: "Timer", helpId: "block_timer" },
   { id: "away", icon: "mdi:home-off", title: "Casa vuota", helpId: "block_away" },
   { id: "notify", icon: "mdi:bullhorn-outline", title: "Annunci vocali", helpId: "block_notify" },
+  { id: "boiler", icon: "mdi:fireplace", title: "Programma della caldaia", helpId: "block_boiler" },
   { id: "links", icon: "mdi:link-variant", title: "Collegamenti", helpId: "block_links" },
 ];
 
@@ -155,6 +157,18 @@ export class TermostatoSettingsDialog extends LitElement {
       </div>`;
   }
 
+  private _boilerRow(key: BoilerKey, label: string, domain: string, required: boolean) {
+    const options = Object.keys(this.hass.states).filter((id) => id.startsWith(`${domain}.`));
+    const value = this._s[key];
+    return html`
+      <div class="row col">
+        <div class="t"><span class="lab">${label}</span> <span class="opt">${required ? "serve se la sospensione è accesa" : "facoltativo"}</span>${this._helpBtn(key)}</div>
+        <input class="txt" list=${`dl-${key}`} .value=${value} placeholder=${`${domain}.nome`} @change=${(e: Event) => this._set(key, (e.target as HTMLInputElement).value.trim())} />
+        <datalist id=${`dl-${key}`}>${options.map((o) => html`<option value=${o}></option>`)}</datalist>
+        ${value && !this.hass.states[value] ? html`<div class="warn">Entità non trovata in Home Assistant.</div>` : nothing}
+      </div>`;
+  }
+
   private _summary(id: string): string {
     const s = this._s;
     switch (id) {
@@ -162,6 +176,7 @@ export class TermostatoSettingsDialog extends LitElement {
       case "timer": return `Al massimo ${s.timer_max_hours} h`;
       case "away": return s.away_setback ? `Abbassa dopo ${s.away_minutes} min` : "Disattivato";
       case "notify": return !s.notify_enabled || !s.notify_service ? "Nessun annuncio" : s.notify_targets.length ? `${s.notify_targets.length} altoparlanti` : s.notify_service;
+      case "boiler": return s.boiler_program_pause ? "Sospeso durante il timer" : "Non gestito";
       default: return "Termostato e sensori";
     }
   }
@@ -190,6 +205,8 @@ export class TermostatoSettingsDialog extends LitElement {
             </div>
           </div>`;
       }
+      case "boiler":
+        return html`${this._boolRow("boiler_program_pause", "Sospendi il programma col timer")}${this._boilerRow("boiler_program_switch", "Interruttore del programma", "switch", true)}${this._boilerRow("boiler_climate", "Caldaia da accendere", "climate", false)}`;
       default:
         return html`${this._entityRow("climate", "Termostato", ["climate"], true)}${this._entityRow("temperature_sensor", "Sensore di temperatura", ["sensor"], false)}${this._entityRow("away_entity", "Casa vuota", ["binary_sensor", "input_boolean"], false)}${this._entityRow("guests_entity", "Ospiti in casa", ["binary_sensor", "input_boolean"], false)}`;
     }

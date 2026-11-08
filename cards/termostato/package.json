@@ -1,6 +1,6 @@
 {
   "name": "termostato-riscaldamento",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Scheda Lovelace del termostato ambiente con programma settimanale, timer, antigelo e preferenze, servita dall'integrazione termostato_riscaldamento.",
   "license": "MIT",
   "author": "Corrado Gamberoni",

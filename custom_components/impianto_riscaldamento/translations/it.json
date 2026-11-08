@@ -85,7 +85,10 @@
           "away_minutes": "Minuti di casa vuota prima di abbassare",
           "notify_enabled": "Annunci vocali attivi",
           "notify_service": "Servizio di annuncio (per esempio notify.alexa_media)",
-          "notify_targets": "Altoparlanti degli annunci"
+          "notify_targets": "Altoparlanti degli annunci",
+          "boiler_program_pause": "Col timer in corso sospendi il programma settimanale della caldaia",
+          "boiler_program_switch": "Interruttore del programma della caldaia (per esempio switch.casale_cronotermostato_settimanale)",
+          "boiler_climate": "Caldaia da accendere all'avvio del timer se è spenta (facoltativo)"
         }
       }
     }

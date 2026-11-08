@@ -294,8 +294,9 @@ async def test_boiler_program_is_paused_during_timer_and_resumed(hass: HomeAssis
     assert log == [("programma", "off"), ("caldaia", "heat")]
     # a fine timer il programma torna
     await _tick(hass, freezer, datetime(2030, 10, 21, 10, 1, tzinfo=ROME))
-    assert ctl.timer_until is None and log[-1] == ("programma", "on") and hass.states.get(PROGRAM).state == "on"
-    assert ctl.boiler_paused is None and ctl.info()["boiler_program_paused"] is False
+    assert ctl.timer_until is None and hass.states.get(PROGRAM).state == "on"
+    assert log[2:] == [("programma", "on"), ("caldaia", "off")]            # programma riacceso e caldaia, accesa dal timer, spenta
+    assert ctl.boiler_paused is None and ctl.boiler_started is None and ctl.info()["boiler_program_paused"] is False
 
 
 async def test_boiler_program_resumed_when_timer_is_cancelled(hass: HomeAssistant, freezer) -> None:
@@ -364,6 +365,65 @@ async def test_boiler_program_waits_while_switch_unavailable(hass: HomeAssistant
     hass.states.async_set(PROGRAM, "off")
     await _tick(hass, freezer, datetime(2030, 10, 21, 9, 6, tzinfo=ROME))
     assert log[-1] == ("programma", "on") and ctl.boiler_paused is None
+
+
+async def test_boiler_started_by_timer_is_stopped_at_the_end(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass)
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    assert ctl.boiler_started == BOILER
+    ctl.start_timer(0)                                                      # annullato prima della fine
+    await hass.async_block_till_done()
+    assert log == [("programma", "off"), ("caldaia", "heat"), ("programma", "on"), ("caldaia", "off")]
+    assert ctl.boiler_started is None
+
+
+async def test_boiler_already_on_or_option_off_is_not_stopped(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    _, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass, boiler="heat")                                 # accesa prima del timer: resta accesa
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    ctl.start_timer(0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off"), ("programma", "on")]
+    # opzione spenta: la caldaia accesa dal timer resta accesa
+    ctl.update_settings(ctl.settings.from_dict({**BOILER_OPTS, "boiler_stop_after_timer": False}))
+    hass.states.async_set(BOILER, "off")
+    log.clear()
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    ctl.start_timer(0)
+    await hass.async_block_till_done()
+    assert log == [("programma", "off"), ("caldaia", "heat"), ("programma", "on")]
+    assert ctl.boiler_started is None
+
+
+async def test_boiler_stopped_after_restart_and_manual_off_is_respected(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    entry, ctl, _ = await _setup(hass, start=19.0, options=BOILER_OPTS)
+    log = _fake_boiler(hass)
+    ctl.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    await hass.config_entries.async_unload(entry.entry_id)
+    freezer.move_to(datetime(2030, 10, 21, 11, 0, tzinfo=ROME))             # il timer è scaduto con Home Assistant spento
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert log[-2:] == [("programma", "on"), ("caldaia", "off")]
+    # caldaia già spenta a mano durante il timer: nessun comando in più
+    ctl2 = hass.data[DOMAIN][entry.entry_id]
+    log.clear()
+    hass.states.async_set(PROGRAM, "on")
+    hass.states.async_set(BOILER, "off")
+    ctl2.start_timer(60, 22.0)
+    await hass.async_block_till_done()
+    hass.states.async_set(BOILER, "off")
+    log.clear()
+    ctl2.start_timer(0)
+    await hass.async_block_till_done()
+    assert ("caldaia", "off") not in log
 
 
 # ---------------------------------------------------------------------- casa vuota

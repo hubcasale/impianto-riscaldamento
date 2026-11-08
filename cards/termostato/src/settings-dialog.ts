@@ -6,7 +6,7 @@ import { HELP } from "./help";
 import type { HomeAssistant, TermoInfo, TermoSettings } from "./types";
 
 type NumKey = "antigelo" | "min_target" | "max_target" | "default_target" | "timer_max_hours" | "away_minutes";
-type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled" | "boiler_program_pause";
+type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled" | "boiler_program_pause" | "boiler_stop_after_timer";
 type BoilerKey = "boiler_program_switch" | "boiler_climate";
 type SrcKey = "climate" | "temperature_sensor" | "away_entity" | "guests_entity";
 
@@ -206,7 +206,7 @@ export class TermostatoSettingsDialog extends LitElement {
           </div>`;
       }
       case "boiler":
-        return html`${this._boolRow("boiler_program_pause", "Sospendi il programma col timer")}${this._boilerRow("boiler_program_switch", "Interruttore del programma", "switch", true)}${this._boilerRow("boiler_climate", "Caldaia da accendere", "climate", false)}`;
+        return html`${this._boolRow("boiler_program_pause", "Sospendi il programma col timer")}${this._boilerRow("boiler_program_switch", "Interruttore del programma", "switch", true)}${this._boilerRow("boiler_climate", "Caldaia da accendere", "climate", false)}${this._boolRow("boiler_stop_after_timer", "A fine timer spegni la caldaia")}`;
       default:
         return html`${this._entityRow("climate", "Termostato", ["climate"], true)}${this._entityRow("temperature_sensor", "Sensore di temperatura", ["sensor"], false)}${this._entityRow("away_entity", "Casa vuota", ["binary_sensor", "input_boolean"], false)}${this._entityRow("guests_entity", "Ospiti in casa", ["binary_sensor", "input_boolean"], false)}`;
     }

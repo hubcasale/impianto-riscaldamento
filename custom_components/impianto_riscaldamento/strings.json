@@ -88,7 +88,8 @@
           "notify_targets": "Announcement speakers",
           "boiler_program_pause": "Pause the boiler's weekly program while the timer runs",
           "boiler_program_switch": "Boiler weekly program switch (for example switch.casale_cronotermostato_settimanale)",
-          "boiler_climate": "Boiler to turn on when the timer starts if it is off (optional)"
+          "boiler_climate": "Boiler to turn on when the timer starts if it is off (optional)",
+          "boiler_stop_after_timer": "Turn the boiler off when the timer ends, if the timer turned it on"
         }
       }
     }

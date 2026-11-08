@@ -55,6 +55,7 @@ def settings_schema(s: Settings) -> vol.Schema:
             vol.Optional(
                 "boiler_climate", description={"suggested_value": s.boiler_climate or None}
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="climate")),
+            vol.Required("boiler_stop_after_timer", default=s.boiler_stop_after_timer): selector.BooleanSelector(),
         }
     )
 

@@ -61,6 +61,7 @@ class Settings:
     boiler_program_pause: bool = False    # durante il timer sospende il programma settimanale della caldaia (spegne l'interruttore)
     boiler_program_switch: str = ""       # l'interruttore del programma settimanale della caldaia (switch.*)
     boiler_climate: str = ""              # la caldaia da accendere se è spenta all'avvio del timer (climate.*); vuoto = non la tocca
+    boiler_stop_after_timer: bool = True  # a fine timer spegne la caldaia, ma solo se l'ha accesa il timer
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Settings":

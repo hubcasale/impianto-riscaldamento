@@ -29,6 +29,7 @@ export interface TermoSettings {
   boiler_program_pause: boolean;
   boiler_program_switch: string;
   boiler_climate: string;
+  boiler_stop_after_timer: boolean;
 }
 
 /** Una fascia: giorni (0 = lunedì), "HH:MM" di inizio e fine e temperatura; se la fine non segue l'inizio finisce il giorno dopo. */

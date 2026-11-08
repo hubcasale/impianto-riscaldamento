@@ -112,6 +112,12 @@ export const HELP: Record<string, HelpText> = {
     what: "La caldaia (climate) da accendere all'avvio del timer se è spenta e la stanza è sotto la temperatura del timer. Senza programma la caldaia non parte da sola.",
     when: "Indicala se vuoi che il timer accenda anche la caldaia spenta. Facoltativo.",
   },
+  boiler_stop_after_timer: {
+    title: "A fine timer spegni la caldaia",
+    what: "Se il timer ha acceso la caldaia (era spenta), a fine timer la spegne di nuovo. Riattivare il programma settimanale fuori fascia non la ferma, e in standby ripartirebbe da sola quando il puffer si raffredda. Una caldaia già accesa prima del timer non viene mai spenta.",
+    when: "Lascialo acceso, a meno che un timer lungo possa finire dentro una fascia del programma: lì la caldaia resterebbe spenta fino alla fascia successiva.",
+    suggested: "Acceso.",
+  },
   block_links: {
     title: "Collegamenti",
     what: "Le entità di Home Assistant che il termostato usa: il termostato da comandare, un sensore di temperatura e gli indicatori di casa vuota e ospiti.",

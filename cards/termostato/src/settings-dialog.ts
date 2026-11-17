@@ -5,9 +5,9 @@ import { clampStep, fmtTemp, validateSettings } from "./card-logic";
 import { HELP } from "./help";
 import type { HomeAssistant, TermoInfo, TermoSettings } from "./types";
 
-type NumKey = "antigelo" | "min_target" | "max_target" | "default_target" | "timer_max_hours" | "away_minutes";
-type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled" | "boiler_program_pause" | "boiler_stop_after_timer";
-type BoilerKey = "boiler_program_switch" | "boiler_climate";
+type NumKey = "antigelo" | "min_target" | "max_target" | "default_target" | "timer_max_hours" | "away_minutes" | "puffer_min_temp" | "puffer_hysteresis";
+type BoolKey = "frost_keep_heat" | "away_setback" | "notify_enabled" | "boiler_program_pause" | "boiler_stop_after_timer" | "puffer_gate";
+type BoilerKey = "boiler_program_switch" | "boiler_climate" | "puffer_sensor";
 type SrcKey = "climate" | "temperature_sensor" | "away_entity" | "guests_entity";
 
 interface NumField { key: NumKey; label: string; unit: string; min: number; max: number; step: number }
@@ -19,6 +19,8 @@ const NUMS: Record<NumKey, NumField> = {
   default_target: { key: "default_target", label: "Obiettivo predefinito", unit: "°C", min: 5, max: 35, step: 0.5 },
   timer_max_hours: { key: "timer_max_hours", label: "Durata massima del timer", unit: "h", min: 1, max: 24, step: 1 },
   away_minutes: { key: "away_minutes", label: "Minuti di casa vuota prima di abbassare", unit: "min", min: 0, max: 1440, step: 5 },
+  puffer_min_temp: { key: "puffer_min_temp", label: "Temperatura minima del puffer", unit: "°C", min: 20, max: 70, step: 0.5 },
+  puffer_hysteresis: { key: "puffer_hysteresis", label: "Isteresi", unit: "°C", min: 0.5, max: 10, step: 0.5 },
 };
 
 interface Block {
@@ -34,6 +36,7 @@ const BLOCKS: Block[] = [
   { id: "away", icon: "mdi:home-off", title: "Casa vuota", helpId: "block_away" },
   { id: "notify", icon: "mdi:bullhorn-outline", title: "Annunci vocali", helpId: "block_notify" },
   { id: "boiler", icon: "mdi:fireplace", title: "Programma della caldaia", helpId: "block_boiler" },
+  { id: "puffer", icon: "mdi:pump", title: "Riscaldamento e puffer", helpId: "block_puffer" },
   { id: "links", icon: "mdi:link-variant", title: "Collegamenti", helpId: "block_links" },
 ];
 
@@ -157,12 +160,12 @@ export class TermostatoSettingsDialog extends LitElement {
       </div>`;
   }
 
-  private _boilerRow(key: BoilerKey, label: string, domain: string, required: boolean) {
+  private _boilerRow(key: BoilerKey, label: string, domain: string, required: boolean, needed = "serve se la sospensione è accesa") {
     const options = Object.keys(this.hass.states).filter((id) => id.startsWith(`${domain}.`));
     const value = this._s[key];
     return html`
       <div class="row col">
-        <div class="t"><span class="lab">${label}</span> <span class="opt">${required ? "serve se la sospensione è accesa" : "facoltativo"}</span>${this._helpBtn(key)}</div>
+        <div class="t"><span class="lab">${label}</span> <span class="opt">${required ? needed : "facoltativo"}</span>${this._helpBtn(key)}</div>
         <input class="txt" list=${`dl-${key}`} .value=${value} placeholder=${`${domain}.nome`} @change=${(e: Event) => this._set(key, (e.target as HTMLInputElement).value.trim())} />
         <datalist id=${`dl-${key}`}>${options.map((o) => html`<option value=${o}></option>`)}</datalist>
         ${value && !this.hass.states[value] ? html`<div class="warn">Entità non trovata in Home Assistant.</div>` : nothing}
@@ -177,6 +180,7 @@ export class TermostatoSettingsDialog extends LitElement {
       case "away": return s.away_setback ? `Abbassa dopo ${s.away_minutes} min` : "Disattivato";
       case "notify": return !s.notify_enabled || !s.notify_service ? "Nessun annuncio" : s.notify_targets.length ? `${s.notify_targets.length} altoparlanti` : s.notify_service;
       case "boiler": return s.boiler_program_pause ? "Sospeso durante il timer" : "Non gestito";
+      case "puffer": return s.puffer_gate ? `Parte sopra ${fmtTemp(s.puffer_min_temp)} °C` : "Non gestito";
       default: return "Termostato e sensori";
     }
   }
@@ -207,6 +211,8 @@ export class TermostatoSettingsDialog extends LitElement {
       }
       case "boiler":
         return html`${this._boolRow("boiler_program_pause", "Sospendi il programma col timer")}${this._boilerRow("boiler_program_switch", "Interruttore del programma", "switch", true)}${this._boilerRow("boiler_climate", "Caldaia da accendere", "climate", false)}${this._boolRow("boiler_stop_after_timer", "A fine timer spegni la caldaia")}`;
+      case "puffer":
+        return html`${this._boolRow("puffer_gate", "Parte solo col puffer caldo")}${this._boilerRow("puffer_sensor", "Sonda del puffer", "sensor", true, "serve se il blocco è acceso")}${this._numRow("puffer_min_temp")}${this._numRow("puffer_hysteresis")}`;
       default:
         return html`${this._entityRow("climate", "Termostato", ["climate"], true)}${this._entityRow("temperature_sensor", "Sensore di temperatura", ["sensor"], false)}${this._entityRow("away_entity", "Casa vuota", ["binary_sensor", "input_boolean"], false)}${this._entityRow("guests_entity", "Ospiti in casa", ["binary_sensor", "input_boolean"], false)}`;
     }

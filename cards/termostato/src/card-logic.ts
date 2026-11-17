@@ -248,6 +248,7 @@ export function validateSettings(s: TermoSettings): string[] {
   if (s.default_target < s.min_target || s.default_target > s.max_target) errs.push("L'obiettivo predefinito deve stare tra minimo e massimo.");
   if (s.notify_enabled && s.notify_service.trim() !== "" && !s.notify_service.includes(".")) errs.push("Il servizio di annuncio va scritto come notify.nome.");
   if (s.boiler_program_pause && !/^switch\.[a-z0-9_]+$/.test(s.boiler_program_switch.trim())) errs.push("Per sospendere il programma della caldaia indica il suo interruttore (switch.nome).");
+  if (s.puffer_gate && !/^sensor\.[a-z0-9_]+$/.test(s.puffer_sensor.trim())) errs.push("Per far partire il riscaldamento col puffer caldo indica la sua sonda (sensor.nome).");
   if (s.boiler_climate.trim() !== "" && !/^climate\.[a-z0-9_]+$/.test(s.boiler_climate.trim())) errs.push("La caldaia da accendere va scritta come climate.nome.");
   return errs;
 }

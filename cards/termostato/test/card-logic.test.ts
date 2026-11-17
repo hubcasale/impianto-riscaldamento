@@ -5,7 +5,7 @@ import { gaugeSvg } from "../src/gauge";
 import { HELP } from "../src/help";
 import type { SlotData, TermoSettings } from "../src/types";
 
-const S: TermoSettings = { antigelo: 5, min_target: 10, max_target: 23, default_target: 20.5, timer_max_hours: 6, frost_keep_heat: true, away_setback: true, away_minutes: 30, notify_enabled: true, notify_service: "", notify_targets: [], boiler_program_pause: false, boiler_program_switch: "", boiler_climate: "", boiler_stop_after_timer: true };
+const S: TermoSettings = { antigelo: 5, min_target: 10, max_target: 23, default_target: 20.5, timer_max_hours: 6, frost_keep_heat: true, away_setback: true, away_minutes: 30, notify_enabled: true, notify_service: "", notify_targets: [], boiler_program_pause: false, boiler_program_switch: "", boiler_climate: "", boiler_stop_after_timer: true, puffer_gate: false, puffer_sensor: "", puffer_min_temp: 40, puffer_hysteresis: 2 };
 
 test("fmtTemp e toNumber", () => {
   assert.equal(fmtTemp(20.5), "20,5");
@@ -105,8 +105,14 @@ test("programma della caldaia: l'interruttore serve solo se la sospensione è ac
   assert.deepEqual(validateSettings({ ...S, boiler_climate: "climate.casale_acqua" }), []);
 });
 
+test("blocco puffer: la sonda va indicata se il blocco e' acceso", () => {
+  assert.deepEqual(validateSettings({ ...S, puffer_gate: false }), []);
+  assert.match(validateSettings({ ...S, puffer_gate: true })[0], /sensor/);
+  assert.deepEqual(validateSettings({ ...S, puffer_gate: true, puffer_sensor: "sensor.solare_termico_puffer_minima_riscaldamento" }), []);
+});
+
 test("ogni preferenza ha la sua spiegazione completa", () => {
-  const ids = ["block_temperature", "antigelo", "min_target", "max_target", "default_target", "frost_keep_heat", "block_timer", "timer_max_hours", "block_away", "away_setback", "away_minutes", "block_notify", "notify_enabled", "notify_service", "notify_targets", "block_boiler", "boiler_program_pause", "boiler_program_switch", "boiler_climate", "boiler_stop_after_timer", "block_links", "climate", "temperature_sensor", "away_entity", "guests_entity"];
+  const ids = ["block_temperature", "antigelo", "min_target", "max_target", "default_target", "frost_keep_heat", "block_timer", "timer_max_hours", "block_away", "away_setback", "away_minutes", "block_notify", "notify_enabled", "notify_service", "notify_targets", "block_boiler", "boiler_program_pause", "boiler_program_switch", "boiler_climate", "boiler_stop_after_timer", "block_puffer", "puffer_gate", "puffer_sensor", "puffer_min_temp", "puffer_hysteresis", "block_links", "climate", "temperature_sensor", "away_entity", "guests_entity"];
   for (const id of ids) {
     const h = HELP[id];
     assert.ok(h, id);

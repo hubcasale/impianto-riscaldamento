@@ -74,6 +74,9 @@ class ModeSensor(TermoEntity, SensorEntity):
             "prossima_temperatura": None if nxt is None else nxt[2],
             "prossimo_evento": None if nxt is None else nxt[1].isoformat(),
             "assenza_attiva": c.away_applied,
+            "puffer_in_attesa": c.gate_waiting,
+            "puffer_temperatura": c.puffer_value(),
+            "puffer_soglia": c.settings.puffer_min_temp if c.settings.puffer_gate else None,
             "ultima_azione": c.last_action,
         }
 

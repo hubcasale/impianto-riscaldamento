@@ -89,7 +89,11 @@
           "boiler_program_pause": "Col timer in corso sospendi il programma settimanale della caldaia",
           "boiler_program_switch": "Interruttore del programma della caldaia (per esempio switch.casale_cronotermostato_settimanale)",
           "boiler_climate": "Caldaia da accendere all'avvio del timer se è spenta (facoltativo)",
-          "boiler_stop_after_timer": "A fine timer spegni la caldaia, se l'ha accesa il timer"
+          "boiler_stop_after_timer": "A fine timer spegni la caldaia, se l'ha accesa il timer",
+          "puffer_gate": "Il riscaldamento parte solo se il puffer è abbastanza caldo",
+          "puffer_sensor": "Sonda del puffer (pozzetto della minima attivazione pompa circuito)",
+          "puffer_min_temp": "Temperatura minima del puffer per far partire il riscaldamento (°C)",
+          "puffer_hysteresis": "Isteresi: riparte quando il puffer supera la soglia di (°C)"
         }
       }
     }
@@ -174,6 +178,9 @@
       },
       "termostato_sta_scaldando": {
         "name": "Sta scaldando"
+      },
+      "termostato_puffer_in_attesa": {
+        "name": "In attesa del puffer"
       }
     },
     "switch": {

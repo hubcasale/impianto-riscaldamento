@@ -62,6 +62,10 @@ class Settings:
     boiler_program_switch: str = ""       # l'interruttore del programma settimanale della caldaia (switch.*)
     boiler_climate: str = ""              # la caldaia da accendere se è spenta all'avvio del timer (climate.*); vuoto = non la tocca
     boiler_stop_after_timer: bool = True  # a fine timer spegne la caldaia, ma solo se l'ha accesa il timer
+    puffer_gate: bool = False             # il riscaldamento parte davvero solo con il puffer abbastanza caldo
+    puffer_sensor: str = ""               # sonda del puffer (sensor.*): pozzetto "minima attivazione pompa circuito"
+    puffer_min_temp: float = 40.0         # sotto questa temperatura il termostato non chiama il riscaldamento
+    puffer_hysteresis: float = 2.0        # il riscaldamento riparte quando il puffer supera soglia + isteresi
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "Settings":
@@ -103,6 +107,8 @@ class Settings:
             default_target=default,
             timer_max_hours=min(max(self.timer_max_hours, 1), 24),
             away_minutes=min(max(self.away_minutes, 0), 1440),
+            puffer_min_temp=min(max(round_step(self.puffer_min_temp), 20.0), 70.0),
+            puffer_hysteresis=min(max(round_step(self.puffer_hysteresis), 0.5), 10.0),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -168,3 +174,15 @@ def format_minutes(minutes: int) -> str:
 def format_temp(value: float) -> str:
     """"20,5" o "21", come si dice a voce."""
     return f"{value:.1f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
+def puffer_blocks(value: float | None, minimum: float, hysteresis: float, blocking: bool) -> bool:
+    """Il puffer è troppo freddo per il riscaldamento? Con isteresi: si blocca sotto la soglia, si sblocca sopra soglia + isteresi.
+
+    Senza una lettura valida non si blocca mai: un sensore guasto non deve lasciare la casa al freddo.
+    """
+    if value is None:
+        return False
+    if blocking:
+        return value < minimum + hysteresis
+    return value < minimum

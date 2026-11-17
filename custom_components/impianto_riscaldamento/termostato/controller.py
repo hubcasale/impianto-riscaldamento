@@ -19,8 +19,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_AWAY, CONF_CLIMATE, CONF_GUESTS, CONF_TEMP, DOMAIN, SIGNAL_UPDATE, STORAGE_VERSION, TICK_SECONDS
 from .logic import (
-    MODE_MANUAL, MODE_OFF, MODE_PROGRAM, Settings, clamp_target, decide_mode, format_minutes, format_temp, is_idle,
-    timer_target, valid_temp,
+    HVAC_ACTIVE, MODE_MANUAL, MODE_OFF, MODE_PROGRAM, Settings, clamp_target, decide_mode, format_minutes, format_temp,
+    is_idle, puffer_blocks, timer_target, valid_temp,
 )
 from .schedule import Schedule
 
@@ -60,6 +60,9 @@ class TermoController:
         self.boiler_paused: str | None = None     # l'interruttore del programma della caldaia che abbiamo spento per il timer
         self.boiler_started: str | None = None    # la caldaia (climate) che abbiamo acceso noi all'avvio del timer
         self._boiler_busy = False
+        self.gate_held = False       # il termostato è spento da noi perché il puffer è freddo (si ripristina quando si scalda)
+        self.gate_blocking = False   # il puffer è sotto la soglia (con isteresi)
+        self.gate_waiting = False    # il riscaldamento aspetta il puffer: il termostato vorrebbe scaldare
         self._store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
         self._unsubs: list = []
         self.sources = sources_of(entry.data)
@@ -100,6 +103,7 @@ class TermoController:
         self.boiler_paused = paused if isinstance(paused, str) and paused else None
         started = saved.get("boiler_started")
         self.boiler_started = started if isinstance(started, str) and started else None
+        self.gate_held = saved.get("gate_held") is True
         entities = [e for e in (self.climate_entity, self.temp_entity, self.away_entity, self.guests_entity) if e]
         self._unsubs.append(async_track_state_change_event(self.hass, entities, self._on_event))
         self._unsubs.append(async_track_time_interval(self.hass, self._on_tick, timedelta(seconds=TICK_SECONDS)))
@@ -127,6 +131,7 @@ class TermoController:
                 "away_override_until": self.away_override_until.isoformat() if self.away_override_until else None,
                 "boiler_paused": self.boiler_paused,
                 "boiler_started": self.boiler_started,
+                "gate_held": self.gate_held,
             }
         )
 
@@ -164,6 +169,7 @@ class TermoController:
         st = self.hass.states.get(self.climate_entity)
         if st is None or st.state in ("unavailable", "unknown"):
             return None, None, None, None
+        mode = "heat" if (self.gate_held and st.state == "off") else st.state     # spento dal blocco puffer = come se scaldasse
         target = valid_temp(st.attributes.get("temperature"))
         current = valid_temp(st.attributes.get("current_temperature"))
         if self.temp_entity:
@@ -171,7 +177,7 @@ class TermoController:
             override = valid_temp(ts.state) if ts is not None else None
             if override is not None:
                 current = override
-        return st.state, target, current, st.attributes.get("hvac_action")
+        return mode, target, current, st.attributes.get("hvac_action")
 
     @property
     def available(self) -> bool:
@@ -195,7 +201,57 @@ class TermoController:
             self._run_away(now, startup)
             self._run_schedule(now, startup)
         self._run_boiler_program(now)
+        self._run_puffer_gate()
         async_dispatcher_send(self.hass, self.signal)
+
+    # ------------------------------------------------------------------ riscaldamento solo con il puffer caldo
+    def puffer_value(self) -> float | None:
+        """Temperatura del puffer dalla sonda scelta, None se manca o non è un numero."""
+        if not self.settings.puffer_sensor:
+            return None
+        st = self.hass.states.get(self.settings.puffer_sensor)
+        return None if st is None else valid_temp(st.state)
+
+    @callback
+    def _run_puffer_gate(self) -> None:
+        """Sotto la temperatura minima del puffer il termostato resta spento; sopra soglia + isteresi riparte.
+
+        La pompa dei radiatori gira quando il termostato chiama calore: con il puffer freddo non servirebbe a niente (e
+        raffredderebbe l'accumulo). Il blocco spegne il termostato solo se stava scaldando e lo riaccende solo se l'abbiamo
+        spento noi; programma, timer e comandi a mano continuano a cambiare l'obiettivo come sempre.
+        """
+        s = self.settings
+        st = self.hass.states.get(self.climate_entity)
+        if st is None or st.state in ("unavailable", "unknown"):
+            return
+        target = valid_temp(st.attributes.get("temperature"))
+        wants_heat = target is not None and target > s.antigelo + 0.01
+        if not (s.puffer_gate and s.puffer_sensor):
+            self.gate_blocking = False
+            self.gate_waiting = False
+            if self.gate_held:
+                self._release_gate(st.state, wants_heat)
+            return
+        self.gate_blocking = puffer_blocks(self.puffer_value(), s.puffer_min_temp, s.puffer_hysteresis, self.gate_blocking or self.gate_held)
+        if self.gate_blocking:
+            if st.state in HVAC_ACTIVE and wants_heat:
+                self.gate_held = True
+                self._save_soon()
+                self._call_many([("climate", "set_hvac_mode", {"entity_id": self.climate_entity, "hvac_mode": "off"})])
+                self._remember("attesa puffer", f"puffer sotto {format_temp(s.puffer_min_temp)} °C", dt_util.now(), None)
+            self.gate_waiting = wants_heat and (self.gate_held or st.state in HVAC_ACTIVE)
+        else:
+            self.gate_waiting = False
+            if self.gate_held:
+                self._release_gate(st.state, wants_heat)
+
+    def _release_gate(self, hvac: str, wants_heat: bool) -> None:
+        """Il puffer si è scaldato: se il termostato è ancora spento per colpa nostra e deve scaldare, lo riaccende."""
+        self.gate_held = False
+        self._save_soon()
+        if hvac == "off" and wants_heat:
+            self._call_many([("climate", "set_hvac_mode", {"entity_id": self.climate_entity, "hvac_mode": "heat"})])
+            self._remember("riscaldamento", "puffer abbastanza caldo", dt_util.now(), self._climate()[1])
 
     # ------------------------------------------------------------------ programma settimanale della caldaia
     def _run_boiler_program(self, now: datetime) -> None:
@@ -526,5 +582,14 @@ class TermoController:
             "next_event": None if nxt is None else {"kind": nxt[0], "time": nxt[1].isoformat(), "temp": nxt[2]},
             "away_applied": self.away_applied,
             "boiler_program_paused": self.boiler_paused is not None,
+            "puffer": {
+                "gate": self.settings.puffer_gate,
+                "sensor": self.settings.puffer_sensor or None,
+                "value": self.puffer_value(),
+                "min": self.settings.puffer_min_temp,
+                "hysteresis": self.settings.puffer_hysteresis,
+                "blocking": self.gate_blocking,
+                "waiting": self.gate_waiting,
+            },
             "last_action": self.last_action,
         }

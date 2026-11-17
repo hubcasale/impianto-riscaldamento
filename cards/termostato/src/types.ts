@@ -30,6 +30,10 @@ export interface TermoSettings {
   boiler_program_switch: string;
   boiler_climate: string;
   boiler_stop_after_timer: boolean;
+  puffer_gate: boolean;
+  puffer_sensor: string;
+  puffer_min_temp: number;
+  puffer_hysteresis: number;
 }
 
 /** Una fascia: giorni (0 = lunedì), "HH:MM" di inizio e fine e temperatura; se la fine non segue l'inizio finisce il giorno dopo. */
@@ -63,6 +67,7 @@ export interface TermoInfo {
   next_event: { kind: "set" | "idle"; time: string; temp: number | null } | null;
   away_applied: boolean;
   boiler_program_paused?: boolean;
+  puffer?: { gate: boolean; sensor: string | null; value: number | null; min: number; hysteresis: number; blocking: boolean; waiting: boolean };
   last_action: { azione: string; motivo: string; quando: string; temperatura: number | null } | null;
   entities: Record<string, string>;
 }

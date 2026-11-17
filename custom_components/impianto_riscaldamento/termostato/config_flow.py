@@ -56,6 +56,12 @@ def settings_schema(s: Settings) -> vol.Schema:
                 "boiler_climate", description={"suggested_value": s.boiler_climate or None}
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="climate")),
             vol.Required("boiler_stop_after_timer", default=s.boiler_stop_after_timer): selector.BooleanSelector(),
+            vol.Required("puffer_gate", default=s.puffer_gate): selector.BooleanSelector(),
+            vol.Optional(
+                "puffer_sensor", description={"suggested_value": s.puffer_sensor or None}
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class="temperature")),
+            vol.Required("puffer_min_temp", default=s.puffer_min_temp): _number(20, 70, 0.5, "°C"),
+            vol.Required("puffer_hysteresis", default=s.puffer_hysteresis): _number(0.5, 10, 0.5, "°C"),
         }
     )
 

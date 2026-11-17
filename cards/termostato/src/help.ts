@@ -118,6 +118,34 @@ export const HELP: Record<string, HelpText> = {
     when: "Lascialo acceso, a meno che un timer lungo possa finire dentro una fascia del programma: lì la caldaia resterebbe spenta fino alla fascia successiva.",
     suggested: "Acceso.",
   },
+  block_puffer: {
+    title: "Riscaldamento e puffer",
+    what: "Fa partire il riscaldamento solo quando il puffer è abbastanza caldo. Sotto la temperatura minima il termostato resta spento, anche se il programma lo accende o lo chiedi tu a mano; quando il puffer si scalda riparte da solo con l'obiettivo di prima.",
+    when: "Serve se la pompa dei radiatori gira quando il termostato chiama calore: con il puffer freddo farebbe solo circolare acqua fredda e raffredderebbe l'accumulo.",
+  },
+  puffer_gate: {
+    title: "Il riscaldamento parte solo col puffer caldo",
+    what: "Se acceso, il termostato viene spento finché la sonda del puffer è sotto la temperatura minima, e riacceso quando supera minima più isteresi. Se la sonda non risponde il blocco non interviene mai: un guasto non lascia la casa al freddo.",
+    when: "Accendilo quando il puffer può essere freddo, per esempio con la caldaia spenta o appena riaccesa.",
+    suggested: "Acceso, con la sonda del pozzetto «minima attivazione pompa circuito».",
+  },
+  puffer_sensor: {
+    title: "Sonda del puffer",
+    what: "Il sensore di temperatura (sensor.nome) del puffer che decide se il riscaldamento può partire.",
+    when: "Obbligatorio se il blocco è acceso. Sul CLESS è la sonda nel pozzetto b di sinistra (lato impianto).",
+  },
+  puffer_min_temp: {
+    title: "Temperatura minima del puffer",
+    what: "Sotto questa temperatura il termostato non può far partire il riscaldamento.",
+    when: "Imposta un valore poco sopra la temperatura minima utile per i radiatori.",
+    suggested: "Tra 35 e 45 °C, a seconda dei radiatori.",
+  },
+  puffer_hysteresis: {
+    title: "Isteresi",
+    what: "Dopo il blocco il riscaldamento riparte solo quando il puffer supera la temperatura minima di tanti gradi. Evita accensioni e spegnimenti ripetuti vicino alla soglia.",
+    when: "Aumentala se il termostato si accende e si spegne troppo spesso.",
+    suggested: "2 °C.",
+  },
   block_links: {
     title: "Collegamenti",
     what: "Le entità di Home Assistant che il termostato usa: il termostato da comandare, un sensore di temperatura e gli indicatori di casa vuota e ospiti.",

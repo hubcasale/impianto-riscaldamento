@@ -146,6 +146,7 @@ export class TermostatoCard extends LitElement {
       timerUntil: timerRaw ? Date.parse(timerRaw) : null,
       timerTemp: toNumber(ma.temperatura_timer) ?? info.timer_temp,
       away: ma.assenza_attiva === true || (mo === undefined && info.away_applied),
+      waitPuffer: ma.puffer_in_attesa === true || (mo === undefined && info.puffer?.waiting === true),
     };
   }
 
@@ -190,7 +191,7 @@ export class TermostatoCard extends LitElement {
     const g = gaugeModel(lv.current, shownTarget, s);
     const line = modeLine(lv.mode, { target: shownTarget, expected: info.expected, timerUntil: lv.timerUntil, timerTemp: lv.timerTemp, next: lv.next, awayApplied: lv.away, antigelo: s.antigelo }, this._now);
     const heating = lv.action === "heating";
-    const pill = !lv.available ? ["Non disponibile", "bad"] : heating ? ["Sta scaldando", "warn"] : lv.mode === "spento" ? ["Antigelo", "idle"] : ["A temperatura", "ok"];
+    const pill = !lv.available ? ["Non disponibile", "bad"] : lv.waitPuffer ? ["Attende il puffer", "warn"] : heating ? ["Sta scaldando", "warn"] : lv.mode === "spento" ? ["Antigelo", "idle"] : ["A temperatura", "ok"];
     const isProgram = lv.mode === "programma" || lv.mode === "fuori_programma";
     const canAdjust = canAdjustTarget(lv.mode, lv.available);
 

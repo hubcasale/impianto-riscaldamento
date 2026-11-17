@@ -89,7 +89,11 @@
           "boiler_program_pause": "Pause the boiler's weekly program while the timer runs",
           "boiler_program_switch": "Boiler weekly program switch (for example switch.casale_cronotermostato_settimanale)",
           "boiler_climate": "Boiler to turn on when the timer starts if it is off (optional)",
-          "boiler_stop_after_timer": "Turn the boiler off when the timer ends, if the timer turned it on"
+          "boiler_stop_after_timer": "Turn the boiler off when the timer ends, if the timer turned it on",
+          "puffer_gate": "Heating starts only if the buffer tank is hot enough",
+          "puffer_sensor": "Buffer tank probe (minimum circuit pump activation pocket)",
+          "puffer_min_temp": "Minimum buffer tank temperature to start heating (°C)",
+          "puffer_hysteresis": "Hysteresis: restart when the buffer tank is above the threshold by (°C)"
         }
       }
     }
@@ -174,6 +178,9 @@
       },
       "termostato_sta_scaldando": {
         "name": "Heating"
+      },
+      "termostato_puffer_in_attesa": {
+        "name": "Waiting for the buffer tank"
       }
     },
     "switch": {

@@ -518,3 +518,75 @@ async def test_card_is_served(hass: HomeAssistant, hass_client) -> None:
     resp = await client.get("/impianto_riscaldamento_static/termostato-card.js")
     assert resp.status == 200
     assert "termostato-card" in await resp.text()
+
+
+# ---------------------------------------------------------------------- riscaldamento solo con il puffer caldo
+PUFFER = "sensor.puffer_minima"
+GATE_OPTS = {"puffer_gate": True, "puffer_sensor": PUFFER, "puffer_min_temp": 40.0, "puffer_hysteresis": 2.0}
+
+
+async def test_puffer_gate_holds_thermostat_off_until_puffer_is_warm(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    hass.states.async_set(PUFFER, "35.0")
+    entry, ctl, calls = await _setup(hass, start=21.0, options=GATE_OPTS)
+    # il termostato vuole scaldare (obiettivo 21 > antigelo) ma il puffer e' sotto 40: lo spegne
+    assert hass.states.get(CLIMATE).state == "off" and ctl.gate_held is True and ctl.gate_waiting is True
+    assert hass.states.get(_entity(hass, entry, "binary_sensor", "puffer_in_attesa")).state == "on"
+    assert ctl.mode == "manuale"                           # la modalita' mostrata non cambia: il blocco e' invisibile alla logica
+    # 41 non basta (soglia + isteresi = 42)
+    hass.states.async_set(PUFFER, "41.0")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 8, 1, tzinfo=ROME))
+    assert hass.states.get(CLIMATE).state == "off"
+    # 42 e oltre: il termostato riparte con l'obiettivo di prima
+    hass.states.async_set(PUFFER, "42.5")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 8, 2, tzinfo=ROME))
+    assert hass.states.get(CLIMATE).state == "heat" and hass.states.get(CLIMATE).attributes["temperature"] == 21.0
+    assert ctl.gate_held is False and ctl.gate_waiting is False
+    # e se il puffer scende ma resta sopra la soglia non si ferma (isteresi)
+    hass.states.async_set(PUFFER, "40.5")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 8, 3, tzinfo=ROME))
+    assert hass.states.get(CLIMATE).state == "heat"
+    hass.states.async_set(PUFFER, "39.0")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 8, 4, tzinfo=ROME))
+    assert hass.states.get(CLIMATE).state == "off" and ctl.gate_held is True
+
+
+async def test_puffer_gate_does_nothing_when_idle_unavailable_or_disabled(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    # antigelo: il termostato non sta chiedendo calore, niente da bloccare
+    hass.states.async_set(PUFFER, "20.0")
+    _, ctl, calls = await _setup(hass, start=5.0, options=GATE_OPTS)
+    assert hass.states.get(CLIMATE).state == "heat" and ctl.gate_held is False and ctl.gate_waiting is False
+    # sonda non disponibile: non si blocca mai (un guasto non deve lasciare la casa al freddo)
+    hass.states.async_set(PUFFER, "unavailable")
+    ctl.set_target(21.0)
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).state == "heat" and ctl.gate_held is False
+    # opzione spenta: nessun intervento anche con il puffer freddo
+    hass.states.async_set(PUFFER, "20.0")
+    ctl.update_settings(ctl.settings.from_dict({**ctl.settings.to_dict(), "puffer_gate": False}))
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).state == "heat"
+
+
+async def test_puffer_gate_program_change_while_held_does_not_turn_heating_on(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    hass.states.async_set(PUFFER, "30.0")
+    _, ctl, calls = await _setup(hass, start=21.0, options=GATE_OPTS)
+    assert ctl.gate_held is True
+    ctl.set_target(22.0)                                   # cambio a mano mentre e' bloccato: vale l'obiettivo, il termostato resta spento
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).state == "off" and hass.states.get(CLIMATE).attributes["temperature"] == 22.0
+    hass.states.async_set(PUFFER, "45.0")
+    await _tick(hass, freezer, datetime(2030, 10, 21, 8, 1, tzinfo=ROME))
+    assert hass.states.get(CLIMATE).state == "heat" and hass.states.get(CLIMATE).attributes["temperature"] == 22.0
+
+
+async def test_puffer_gate_released_when_option_turned_off_while_held(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2030, 10, 21, 8, 0, tzinfo=ROME))
+    hass.states.async_set(PUFFER, "30.0")
+    _, ctl, _ = await _setup(hass, start=21.0, options=GATE_OPTS)
+    assert hass.states.get(CLIMATE).state == "off"
+    ctl.update_settings(ctl.settings.from_dict({**ctl.settings.to_dict(), "puffer_gate": False}))
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).state == "heat" and ctl.gate_held is False

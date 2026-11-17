@@ -33,6 +33,19 @@ class HeatingSensor(TermoEntity, BinarySensorEntity):
         return self.controller._climate()[3] == "heating"
 
 
+class PufferWaitSensor(TermoEntity, BinarySensorEntity):
+    """Il termostato vorrebbe scaldare ma il puffer è sotto la temperatura minima."""
+
+    _attr_icon = "mdi:pump-off"
+
+    def __init__(self, controller: TermoController) -> None:
+        super().__init__(controller, "puffer_in_attesa")
+
+    @property
+    def is_on(self) -> bool:
+        return self.controller.gate_waiting
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     controller: TermoController = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AwaySensor(controller), HeatingSensor(controller)])
+    async_add_entities([AwaySensor(controller), HeatingSensor(controller), PufferWaitSensor(controller)])

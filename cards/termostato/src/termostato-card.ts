@@ -172,7 +172,7 @@ export class TermostatoCard extends LitElement {
   }
 
   private _modeButton(label: string, icon: string, active: boolean, onClick: () => void, warn = false) {
-    return html`<button class=${active ? (warn ? "mb on warn" : "mb on") : "mb"} aria-pressed=${active ? "true" : "false"} @click=${onClick}>
+    return html`<button class=${active ? (warn ? "mb on warn" : "mb on") : "mb"} aria-pressed=${active ? "true" : "false"} aria-label=${label} title=${label} @click=${onClick}>
       <ha-icon icon=${icon}></ha-icon><span>${label}</span>
     </button>`;
   }
@@ -262,9 +262,11 @@ export class TermostatoCard extends LitElement {
     .st { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color, #fff); color: inherit; font-size: 1.6rem; line-height: 1; cursor: pointer; }
     .st:disabled { opacity: 0.4; cursor: not-allowed; }
     .hintline { margin: -4px 0 8px; text-align: center; font-size: 0.78rem; color: var(--secondary-text-color, #727272); }
-    .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .mb { min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 2px; border-radius: 12px; border: 1px solid var(--divider-color, #ccc); background: transparent; color: inherit; font-size: 0.74rem; cursor: pointer; }
-    .mb ha-icon { --mdc-icon-size: 20px; }
+    /* modalita': quattro pulsanti rotondi, solo icona, tutti su una riga (il nome sta nel titolo e nella riga di stato) */
+    .modes { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .mb { position: relative; flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 50%; border: 1px solid var(--divider-color, #ccc); background: transparent; color: inherit; cursor: pointer; }
+    .mb span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .mb ha-icon { --mdc-icon-size: 24px; }
     .mb.on { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; font-weight: 600; }
     .mb.on.warn { background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; }
     .lrow { display: flex; align-items: stretch; gap: 6px; margin-top: 10px; }
@@ -275,12 +277,12 @@ export class TermostatoCard extends LitElement {
     .btn ha-icon { --mdc-icon-size: 20px; }
     /* con spazio in larghezza (colonna di una scheda più grande, tablet): quadrante a sinistra, controlli a destra */
     @container (min-width: 430px) {
-      .cols { display: grid; grid-template-columns: minmax(150px, 0.9fr) 1.1fr; gap: 14px; align-items: center; }
-      .gauge { max-width: 210px; }
-      .big { font-size: 1.8rem; }
+      .pad { padding: 10px 14px 12px; }
+      .cols { display: grid; grid-template-columns: minmax(130px, 0.8fr) 1.2fr; gap: 12px; align-items: center; }
+      .gauge { max-width: 156px; margin-top: 0; }
+      .big { font-size: 1.6rem; }
       .stepper { margin: 0 0 8px; }
-      .modes { grid-template-columns: repeat(2, 1fr); }
-      .mb { min-height: 44px; flex-direction: row; gap: 6px; font-size: 0.82rem; }
+      .lrow { margin-top: 8px; }
     }
     /* striscia larga (sotto le altre schede): tre colonne - quadrante | obiettivo e modalita' | stato, calendario e preferenze */
     @container (min-width: 900px) {
@@ -305,9 +307,9 @@ export class TermostatoCard extends LitElement {
       .lrow .line { flex: 1 1 100%; padding: 4px 10px; font-size: 0.8rem; }
       .lrow .btn { min-height: 38px; min-width: 38px; padding: 2px 8px; }
       .errbox { grid-area: errore; }
-      .modes { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-      .mb { min-height: 38px; flex-direction: column; gap: 0; font-size: 0.74rem; }
-      .mb ha-icon { --mdc-icon-size: 18px; }
+      .modes { gap: 10px; }
+      .mb { width: 40px; height: 40px; }
+      .mb ha-icon { --mdc-icon-size: 20px; }
       .gauge { max-width: 140px; margin-top: 0; }
       .big { font-size: 1.3rem; }
       .read { margin-top: 0; }
@@ -335,4 +337,4 @@ window.customCards.push({
 });
 
 // eslint-disable-next-line no-console
-console.info("%c TERMOSTATO-RISCALDAMENTO %c v0.1.4 ", "color: white; background: #b45309; font-weight: 700;", "color: #b45309; background: white; font-weight: 700;");
+console.info("%c TERMOSTATO-RISCALDAMENTO %c v0.1.10 ", "color: white; background: #b45309; font-weight: 700;", "color: #b45309; background: white; font-weight: 700;");

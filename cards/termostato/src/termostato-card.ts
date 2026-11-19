@@ -276,13 +276,33 @@ export class TermostatoCard extends LitElement {
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; box-sizing: border-box; border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color, rgba(127, 127, 127, 0.08)); color: inherit; border-radius: 12px; padding: 4px 10px; font-size: 0.88rem; cursor: pointer; }
     .btn ha-icon { --mdc-icon-size: 20px; }
     /* con spazio in larghezza (colonna di una scheda più grande, tablet): quadrante a sinistra, controlli a destra */
-    @container (min-width: 430px) {
-      .pad { padding: 10px 14px 12px; }
-      .cols { display: grid; grid-template-columns: minmax(130px, 0.8fr) 1.2fr; gap: 12px; align-items: center; }
-      .gauge { max-width: 156px; margin-top: 0; }
-      .big { font-size: 1.6rem; }
-      .stepper { margin: 0 0 8px; }
-      .lrow { margin-top: 8px; }
+    @container (min-width: 430px) and (max-width: 899.98px) {
+      /* meta' riga (tablet): quadrante | obiettivo in verticale | pulsanti rotondi e riga di stato, tutto su un'unica fascia bassa */
+      .pad {
+        display: grid;
+        grid-template-columns: minmax(120px, 150px) 78px minmax(0, 1fr);
+        grid-template-areas:
+          "titolo titolo stato"
+          "quadrante passo modi"
+          "quadrante passo riga"
+          "errore errore errore";
+        gap: 4px 12px;
+        align-items: center;
+        padding: 8px 14px 10px;
+      }
+      .top, .cols, .right { display: contents; }
+      .title { grid-area: titolo; }
+      .pill { grid-area: stato; justify-self: end; }
+      .left { grid-area: quadrante; }
+      .gauge { max-width: 150px; margin: 0 auto; }
+      .big { font-size: 1.5rem; }
+      .stepper { grid-area: passo; flex-direction: column-reverse; gap: 4px; margin: 0; }
+      .st { width: 44px; height: 44px; }
+      .tv { min-width: 0; font-size: 1.25rem; }
+      .hintline { display: none; }
+      .modes { grid-area: modi; justify-content: flex-start; }
+      .lrow { grid-area: riga; margin-top: 0; }
+      .errbox { grid-area: errore; }
     }
     /* striscia larga (sotto le altre schede): tre colonne - quadrante | obiettivo e modalita' | stato, calendario e preferenze */
     @container (min-width: 900px) {
@@ -337,4 +357,4 @@ window.customCards.push({
 });
 
 // eslint-disable-next-line no-console
-console.info("%c TERMOSTATO-RISCALDAMENTO %c v0.1.10 ", "color: white; background: #b45309; font-weight: 700;", "color: #b45309; background: white; font-weight: 700;");
+console.info("%c TERMOSTATO-RISCALDAMENTO %c v0.1.11 ", "color: white; background: #b45309; font-weight: 700;", "color: #b45309; background: white; font-weight: 700;");
